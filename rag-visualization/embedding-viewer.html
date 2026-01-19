@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Neural-RAG: 3D Semantic Brain</title>
+    <style>
+      body { margin: 0; background: #000; color: #00f2ff; font-family: 'Courier New', monospace; overflow: hidden; }
+      #canvas-container { width: 100vw; height: 100vh; }
+      #controls {
+        position: absolute; top: 20px; left: 20px;
+        background: rgba(0, 10, 25, 0.9); padding: 20px;
+        border-radius: 10px; border: 1px solid #00f2ff;
+        width: 320px; z-index: 10; box-shadow: 0 0 15px rgba(0, 242, 255, 0.3);
+      }
+      #search-box {
+        width: 100%; padding: 12px; background: #000;
+        border: 1px solid #00f2ff; color: #00f2ff;
+        border-radius: 5px; outline: none; font-weight: bold;
+      }
+      .stat { display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; }
+      #loading { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+      h3 { margin-top: 0; border-bottom: 1px solid #00f2ff; padding-bottom: 5px; text-transform: uppercase; }
+    </style>
+  </head>
+  <body>
+    <div id="loading"><h1>INITIALIZING NEURAL PATHWAYS...</h1></div>
+    <div id="controls">
+      <h3>Semantic Brain Map</h3>
+      <input type="text" id="search-box" placeholder="QUERY (e.g. media)..." />
+      <div class="stat">Neurons: <span id="total-chunks">0</span></div>
+      <div class="stat">Synapses: <span id="connection-count">0</span></div>
+    </div>
+    <div id="canvas-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+
+    <script src="embedding-engine.js"></script>
+  </body>
+</html>

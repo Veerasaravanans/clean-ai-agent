@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Framework - Android Automotive Testing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- HEADER -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <header id="header">
+        <div class="header-left">
+            <h1>🤖 AI Agent Framework</h1>
+            <span class="subtitle">Android Automotive UI Testing</span>
+        </div>
+        
+        <div class="header-center">
+            <div class="status-indicator">
+                <div class="status-dot" id="agent-status-dot"></div>
+                <span id="agent-status-text">Idle</span>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <div class="connection-status">
+                <div class="status-item">
+                    <span class="status-label">Device:</span>
+                    <div class="status-dot" id="device-status-dot"></div>
+                    <span id="device-status-text">Disconnected</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">LLM:</span>
+                    <div class="status-dot" id="llm-status-dot"></div>
+                    <span id="llm-status-text">VIO Cloud</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- MAIN CONTAINER -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div class="container">
+        
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- SIDEBAR -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <aside id="sidebar">
+            
+            <!-- Test Execution Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>📋 Test Execution</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="test-id-input">Test ID:</label>
+                        <input type="text" id="test-id-input" placeholder="e.g., NAID-24430" />
+                    </div>
+                    
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="use-learned-checkbox" checked />
+                            Use Learned Solutions
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="max-retries-input">Max Retries:</label>
+                        <input type="number" id="max-retries-input" value="3" min="1" max="10" />
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="run-test-btn" class="btn btn-primary">
+                            ▶️ Run Test
+                        </button>
+                        <button id="stop-test-btn" class="btn btn-danger">
+                            ⏹️ Stop
+                        </button>
+                    </div>
+                    
+                    <div class="progress-container" id="test-progress-container" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="test-progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="test-progress-text">0/0 steps</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Standalone Command Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>💬 Standalone Command</h3>
+                </div>
+                <div class="panel-body">
+                    <form id="standalone-form">
+                        <div class="form-group">
+                            <label for="command-input">Natural Language Command:</label>
+                            <textarea id="command-input" rows="3" placeholder="e.g., Open Settings and enable Bluetooth"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">
+                            🚀 Execute Command
+                        </button>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Device Control Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>📱 Device Control</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="device-info" id="device-info">
+                        <div class="info-item">
+                            <span class="info-label">Model:</span>
+                            <span id="device-model">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Android:</span>
+                            <span id="device-android">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Resolution:</span>
+                            <span id="device-resolution">-</span>
+                        </div>
+                    </div>
+                    
+                    <div class="button-grid">
+                        <button id="press-back-btn" class="btn btn-secondary btn-icon" title="Press Back">
+                            ⬅️ Back
+                        </button>
+                        <button id="press-home-btn" class="btn btn-secondary btn-icon" title="Press Home">
+                            🏠 Home
+                        </button>
+                        <button id="screenshot-btn" class="btn btn-secondary btn-icon" title="Capture Screenshot">
+                            📸 Capture
+                        </button>
+                        <button id="refresh-device-btn" class="btn btn-secondary btn-icon" title="Refresh Device Info">
+                            🔄 Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- NEW: Device Coordinates Panel -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>📍 Device Coordinates</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="coord-icon-name">Icon Name:</label>
+                        <input type="text" id="coord-icon-name" placeholder="e.g., app_launcher" />
+                        <small style="display: block; margin-top: 4px; color: #888; font-size: 11px;">
+                            Common: app_launcher, home, back, hvac_temp_up
+                        </small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="coord-x">X Coordinate:</label>
+                            <input type="number" id="coord-x" placeholder="406" />
+                        </div>
+                        <div class="form-group">
+                            <label for="coord-y">Y Coordinate:</label>
+                            <input type="number" id="coord-y" placeholder="1255" />
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button id="add-coord-btn" class="btn btn-primary btn-block">
+                            ➕ Add Coordinate
+                        </button>
+                        <button id="view-coords-btn" class="btn btn-secondary btn-block">
+                            📋 View All
+                        </button>
+                        <button id="delete-coord-btn" class="btn btn-danger btn-block">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                    
+                    <div id="coord-list-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; display: none;">
+                        <div style="font-size: 11px; color: #888; margin-bottom: 8px;">Stored Coordinates:</div>
+                        <div id="coord-list"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <!-- NEW: Verification Reference Images Panel -->
+            <!-- ═══════════════════════════════════════════════════════════════ -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>📸 Verification Images</h3>
+                </div>
+                <div class="panel-body">
+                    <!-- Capture Section -->
+                    <div class="verification-capture-section">
+                        <div class="form-group">
+                            <label for="verification-image-name">Reference Image Name:</label>
+                            <input 
+                                type="text" 
+                                id="verification-image-name" 
+                                placeholder="e.g., app_launcher_opened" 
+                            />
+                            <small style="display: block; margin-top: 4px; color: #888; font-size: 11px;">
+                                Name should describe expected state (e.g., "settings_opened", "bluetooth_page")
+                            </small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="verification-image-description">Description (Optional):</label>
+                            <textarea 
+                                id="verification-image-description" 
+                                rows="2" 
+                                placeholder="Brief description of this state..."
+                            ></textarea>
+                        </div>
+                        
+                        <!-- Capture Button -->
+                        <button 
+                            id="capture-verification-btn" 
+                            class="btn btn-primary btn-block"
+                            title="Capture current screen as verification reference"
+                        >
+                            📸 Capture Verification Image
+                        </button>
+                    </div>
+                    
+                    <!-- View Images Section -->
+                    <div class="verification-view-section" style="margin-top: 16px;">
+                        <button 
+                            id="view-verification-images-btn" 
+                            class="btn btn-secondary btn-block"
+                            title="View all captured verification images"
+                        >
+                            📋 View Captured Images
+                        </button>
+                        
+                        <!-- Images List Container (hidden by default) -->
+                        <div 
+                            id="verification-images-list-container" 
+                            style="margin-top: 12px; max-height: 250px; overflow-y: auto; display: none;"
+                        >
+                            <div style="font-size: 11px; color: #888; margin-bottom: 8px;">
+                                Captured Verification Images:
+                            </div>
+                            <div id="verification-images-list"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Device Info Display -->
+                    <div 
+                        id="verification-device-info" 
+                        style="margin-top: 12px; padding: 8px; background: #1a1a2e; border-radius: 4px; font-size: 11px; color: #888;"
+                    >
+                        <strong>Device:</strong> <span id="verification-device-id">Not connected</span>
+                    </div>
+                    
+                    <!-- Info Note -->
+                    <div style="margin-top: 10px; padding: 8px; background: #2a2a3e; border-left: 3px solid #4a9eff; font-size: 10px; color: #9a9ab0;">
+                        <strong>ℹ️ How it works:</strong>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li>Capture reference images for each expected state</li>
+                            <li>Images are stored per device (like coordinates)</li>
+                            <li>Tests verify against these reference images using SSIM</li>
+                            <li>Click image name to preview for 3 seconds</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- NEW: VIO Model Selection Panel -->
+            <!-- VIO Model Selection Panel -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>🤖 VIO Model Selection</h3>
+                </div>
+                <div class="panel-body">
+                    <!-- Model Dropdown -->
+                    <div class="form-group">
+                        <label for="vioModelSelect">Select VIO Model:</label>
+                        <select id="vioModelSelect" onchange="updateVIOModelInfo(this.value)" style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #3a3a4e; border-radius: 5px; color: #fff; font-size: 13px;">
+                            
+                            <!-- Vision & Image Models -->
+                            <optgroup label="🖼️ Vision & Image">
+                                <option value="pixtral-large">Pixtral Large (Image understanding)</option>
+                                <option value="gpt-5">GPT-5 (Image understanding)</option>
+                                <option value="gemini-2.5-pro" selected>Gemini 2.5 Pro (Agentic AI) ★</option>
+                                <option value="claude-4.5-sonnet">Claude 4.5 Sonnet</option>
+                                <option value="claude-3.7-sonnet">Claude 3.7 Sonnet</option>
+                                <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
+                            </optgroup>
+                            
+                            <!-- Reasoning Models -->
+                            <optgroup label="🧠 Reasoning">
+                                <option value="deepseek-r1">DeepSeek R1</option>
+                                <option value="phi-4-reasoning">Phi-4-reasoning</option>
+                            </optgroup>
+                            
+                            <!-- Fast Models -->
+                            <optgroup label="⚡ Fast Models">
+                                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                                <option value="grok-4-fast-non-reasoning">Grok-4-fast-non-reasoning</option>
+                                <option value="gpt-5-mini">GPT 5-mini</option>
+                                <option value="gpt-5-nano">GPT 5-nano</option>
+                                <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                                <option value="nova-lite">Nova Lite</option>
+                                <option value="nova-micro">Nova Micro</option>
+                            </optgroup>
+                            
+                            <!-- GPT Family -->
+                            <optgroup label="💬 GPT Family">
+                                <option value="gpt-5-chat">GPT 5-chat</option>
+                                <option value="gpt-5-high">GPT-5-high</option>
+                                <option value="gpt-5-medium">GPT-5-medium</option>
+                                <option value="gpt-5-low">GPT-5-low</option>
+                                <option value="gpt-4o">GPT-4o</option>
+                                <option value="gpt-5.1">Gpt-5.1</option>
+                                <option value="gpt-o3-mini">GPT-o3-mini</option>
+                                <option value="gpt-oss-120b">GPT-OSS-120B</option>
+                                <option value="gpt-oss-20b">GPT-OSS-20B</option>
+                            </optgroup>
+                            
+                            <!-- LLaMA Family -->
+                            <optgroup label="🦙 LLaMA Family">
+                                <option value="llama-3.1-8b">LLaMA 3.1 8B</option>
+                                <option value="llama3-405b">Llama3 405B</option>
+                                <option value="meta-llama-3.3-70b">Meta LLaMA 3.3 70B</option>
+                            </optgroup>
+                            
+                            <!-- Mistral Family -->
+                            <optgroup label="🌪️ Mistral Family">
+                                <option value="mistral-large-2">Mistral Large 2</option>
+                                <option value="mistral-large-2402">Mistral Large 2402</option>
+                            </optgroup>
+                            
+                            <!-- Nova Family -->
+                            <optgroup label="✨ Nova Family">
+                                <option value="nova-premier">Nova Premier</option>
+                                <option value="nova-pro-v1">Nova Pro v1</option>
+                            </optgroup>
+                            
+                            <!-- Qwen Family -->
+                            <optgroup label="🇨🇳 Qwen Family">
+                                <option value="qwen-3.5-235b">Qwen 3.5 235B</option>
+                                <option value="qwen3-coder-480b-a35b-v1">Qwen3-coder (Coding)</option>
+                            </optgroup>
+                            
+                            <!-- Other Models -->
+                            <optgroup label="🔬 Other">
+                                <option value="mai-ds-r1">MAI-DS-R1</option>
+                                <option value="grok-3">Grok-3</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <!-- Quick Scenario Selection -->
+                    <div class="form-group">
+                        <label>Quick Select Scenario:</label>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px;">
+                            <button onclick="selectVIOScenario('vision')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
+                                🖼️ Vision
+                            </button>
+                            <button onclick="selectVIOScenario('agentic')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
+                                🤖 Agentic
+                            </button>
+                            <button onclick="selectVIOScenario('fast')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
+                                ⚡ Fast
+                            </button>
+                            <button onclick="selectVIOScenario('balanced')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
+                                ⚖️ Balanced
+                            </button>
+                            <button onclick="selectVIOScenario('reasoning')" class="btn btn-secondary" style="padding: 6px; font-size: 12px; grid-column: 1 / -1;">
+                                🧠 Reasoning
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Apply Button -->
+                    <button id="applyVIOModelBtn" onclick="applyVIOModelChange()" class="btn btn-primary btn-block" style="margin-top: 12px;">
+                        Apply Model Change
+                    </button>
+                    
+                    <!-- Current Model Info -->
+                    <div id="vioModelInfo" style="margin-top: 12px; padding: 10px; background: #1a1a2e; border-radius: 5px; font-size: 11px; color: #a0a0b0;">
+                        <div><strong>Current:</strong> <span id="currentVIOModel">Gemini 2.5 Pro</span></div>
+                        <div style="margin-top: 5px;"><strong>Category:</strong> <span id="vioModelCategory">agentic</span></div>
+                        <div style="margin-top: 5px;"><strong>Speed:</strong> <span id="vioModelSpeed">⚡⚡</span></div>
+                        <div style="margin-top: 5px;"><strong>Quality:</strong> <span id="vioModelQuality">⭐⭐⭐⭐⭐</span></div>
+                        <div style="margin-top: 5px;"><strong>Use:</strong> <span id="vioModelDesc">Agentic AI usage</span></div>
+                    </div>
+                    
+                    <!-- Note about special models -->
+                    <div style="margin-top: 10px; padding: 8px; background: #2a2a3e; border-left: 3px solid #4a9eff; font-size: 10px; color: #9a9ab0;">
+                        <strong>📝 Note:</strong>
+                        <ul style="margin: 5px 0; padding-left: 20px;">
+                            <li><strong>Pixtral Large, GPT-5:</strong> Best for image understanding</li>
+                            <li><strong>Gemini 2.5 Pro:</strong> Best for agentic AI usage</li>
+                            <li><strong>DeepSeek R1:</strong> Best for deep reasoning tasks</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- HITL Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>👤 Human Guidance</h3>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label for="guidance-input">Guidance Text:</label>
+                        <textarea id="guidance-input" rows="2" placeholder="e.g., Tap the Settings icon"></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="coord-x-input">X:</label>
+                            <input type="number" id="coord-x-input" placeholder="850" />
+                        </div>
+                        <div class="form-group">
+                            <label for="coord-y-input">Y:</label>
+                            <input type="number" id="coord-y-input" placeholder="450" />
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="action-type-select">Action Type:</label>
+                        <select id="action-type-select">
+                            <option value="tap">Tap</option>
+                            <option value="swipe">Swipe</option>
+                            <option value="input_text">Input Text</option>
+                            <option value="verify">Verify</option>
+                        </select>
+                    </div>
+                    
+                    <button id="send-guidance-btn" class="btn btn-primary btn-block">
+                        📤 Send Guidance
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RAG Management Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <h3>🧠 RAG Management</h3>
+                </div>
+                <div class="panel-body">
+                    <button id="index-tests-btn" class="btn btn-secondary btn-block">
+                        📥 Index Test Cases
+                    </button>
+                    
+                    <div class="form-group">
+                        <label for="search-tests-input">Search Tests:</label>
+                        <input type="text" id="search-tests-input" placeholder="Search by keywords..." />
+                    </div>
+                    <button id="search-tests-btn" class="btn btn-secondary btn-block">
+                        🔍 Search
+                    </button>
+                    
+                    <button id="view-learned-btn" class="btn btn-secondary btn-block">
+                        💡 View Learned Solutions
+                    </button>
+                    
+                    <div class="rag-stats" id="rag-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Test Cases:</span>
+                            <span id="rag-test-count">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Learned:</span>
+                            <span id="rag-learned-count">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </aside>
+        
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!-- MAIN CONTENT -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <main id="main-content">
+            
+            <!-- Status Cards -->
+            <div class="status-cards">
+                <div class="status-card">
+                    <div class="card-icon">📱</div>
+                    <div class="card-content">
+                        <div class="card-label">Device Status</div>
+                        <div class="card-value" id="card-device-status">Disconnected</div>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="card-icon">⚙️</div>
+                    <div class="card-content">
+                        <div class="card-label">Agent Status</div>
+                        <div class="card-value" id="card-agent-status">Idle</div>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="card-icon">📊</div>
+                    <div class="card-content">
+                        <div class="card-label">Tests Executed</div>
+                        <div class="card-value" id="card-tests-executed">0</div>
+                    </div>
+                </div>
+                
+                <div class="status-card">
+                    <div class="card-icon">✅</div>
+                    <div class="card-content">
+                        <div class="card-label">Success Rate</div>
+                        <div class="card-value" id="card-success-rate">0%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Screen Stream Section -->
+            <div class="screen-section">
+                <div class="section-header">
+                    <h2>📺 Screen Stream</h2>
+                    <div class="section-controls">
+                        <span class="coordinate-display" id="coordinate-display">x: 0, y: 0</span>
+                        <button id="toggle-stream-btn" class="btn btn-small">🔴 Stream Off</button>
+                    </div>
+                </div>
+                
+                <div class="canvas-container">
+                    <canvas id="screen-canvas" width="720" height="1280"></canvas>
+                    <div class="canvas-overlay" id="canvas-overlay">
+                        <div class="overlay-message">
+                            📱 No device screen available<br>
+                            <small style="font-size: 12px; opacity: 0.7;">Connect a device to see live stream</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Execution Log Section -->
+            <div class="log-section">
+                <div class="section-header">
+                    <h2>📝 Execution Log</h2>
+                    <div class="section-controls">
+                        <select id="log-filter-select">
+                            <option value="all">All Levels</option>
+                            <option value="execution-only">⚡ Execution Only</option>
+                            <option value="ai-only">🤖 AI Reasoning</option>
+                            <option value="user-actions">👆 User Actions</option>
+                            <option value="errors-warnings">⚠️ Errors &amp; Warnings</option>
+                            <option value="info">Info</option>
+                            <option value="success">Success</option>
+                            <option value="warning">Warning</option>
+                            <option value="error">Error</option>
+                            <option value="hitl">HITL</option>
+                        </select>
+                        <button id="clear-logs-btn" class="btn btn-small">🗑️ Clear</button>
+                        <button id="export-logs-btn" class="btn btn-small">💾 Export</button>
+                    </div>
+                </div>
+                
+                <div class="log-container" id="execution-log">
+                    <div class="log-entry log-info" data-category="system">
+                        <span class="log-time">00:00:00</span>
+                        <span class="log-level">INFO</span>
+                        <span class="log-message">System ready. Waiting for commands...</span>
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+        
+    </div>
+    
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- MODALS -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="modal-close" data-modal="settings-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="api-url-input">API URL:</label>
+                    <input type="text" id="api-url-input" value="http://localhost:8000" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="stream-fps-input">Stream FPS:</label>
+                    <input type="number" id="stream-fps-input" value="2" min="1" max="5" />
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="auto-scroll-logs-checkbox" checked />
+                        Auto-scroll Logs
+                    </label>
+                </div>
+                
+                <div class="form-group checkbox-group">
+                    <label>
+                        <input type="checkbox" id="show-coordinates-checkbox" checked />
+                        Show Coordinates on Hover
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="settings-modal">Cancel</button>
+                <button class="btn btn-primary" id="save-settings-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- About Modal -->
+    <div class="modal" id="about-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>ℹ️ About</h2>
+                <button class="modal-close" data-modal="about-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <h3>AI Agent Framework</h3>
+                <p>Version: 1.0.0</p>
+                <p>Android Automotive UI Testing with VIO Cloud Platform</p>
+                
+                <h4>Features:</h4>
+                <ul>
+                    <li>Automated test execution with LangGraph</li>
+                    <li>AI-powered vision and OCR</li>
+                    <li>Real-time screen streaming</li>
+                    <li>Human-in-the-loop intervention</li>
+                    <li>RAG-based learned solutions</li>
+                    <li>Device coordinate management</li>
+                    <li>Multi-model AI support (40+ models)</li>
+                </ul>
+                
+                <h4>Tech Stack:</h4>
+                <ul>
+                    <li>Backend: FastAPI + LangGraph</li>
+                    <li>LLM: VIO Cloud Platform</li>
+                    <li>Database: ChromaDB (Vector Storage)</li>
+                    <li>Frontend: Vanilla JavaScript</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" data-modal="about-modal">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+    
+    <!-- Footer -->
+    <footer id="footer">
+        <div class="footer-content">
+            <span>AI Agent Framework v1.0.0</span>
+            <span class="separator">|</span>
+            <button class="footer-link" id="open-settings-btn">Settings</button>
+            <span class="separator">|</span>
+            <button class="footer-link" id="open-about-btn">About</button>
+            <span class="separator">|</span>
+            <span id="connection-time">Connected: 0s</span>
+        </div>
+    </footer>
+    
+    <!-- Scripts -->
+    <script src="app.js"></script>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Image Preview Modal (Add before closing </body> tag) -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="verification-image-preview-modal" class="verification-preview-modal" style="display: none;">
+        <div class="verification-preview-container">
+            <img id="verification-preview-image" src="" alt="Verification Image" />
+            <div class="verification-preview-name" id="verification-preview-name"></div>
+        </div>
+    </div>
+</body>
+</html>

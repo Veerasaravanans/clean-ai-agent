@@ -1,0 +1,145 @@
+{
+  "device_id": "default_1408_792",
+  "device_info": {
+    "manufacturer": "",
+    "model": "",
+    "screen_resolution": "1408x792",
+    "android_version": "",
+    "description": "Auto-created profile for 1408x792"
+  },
+  "detection_rules": {
+    "screen_width": 1408,
+    "screen_height": 792,
+    "device_name_pattern": ".*"
+  },
+  "icon_coordinates": {
+    "home_icon": {
+      "x": 420,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "manual",
+      "last_verified": "2026-01-12T16:03:09.581925"
+    },
+    "phone_icon": {
+      "x": 530,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "manual",
+      "last_verified": "2026-01-12T16:03:33.058566"
+    },
+    "app_launcher_icon": {
+      "x": 630,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-12T18:16:07.614520"
+    },
+    "hvac_icon": {
+      "x": 740,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-12T18:31:34.346765"
+    },
+    "notification_icon": {
+      "x": 850,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "manual",
+      "last_verified": "2026-01-12T16:04:47.954476"
+    },
+    "google_assistant_icon": {
+      "x": 957,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "manual",
+      "last_verified": "2026-01-12T16:05:30.743394"
+    },
+    "home": {
+      "x": 420,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-13T12:14:48.239978"
+    },
+    "app_drawer": {
+      "x": 630,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-12T17:11:34.967739"
+    },
+    "settings": {
+      "x": 1209,
+      "y": 437,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-14T17:51:06.250090"
+    },
+    "hvac": {
+      "x": 740,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-12T21:52:29.790285"
+    },
+    "app_launcher": {
+      "x": 630,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "ai_detection",
+      "last_verified": "2026-01-18T17:01:39.297040"
+    },
+    "climate": {
+      "x": 740,
+      "y": 740,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "hitl",
+      "last_verified": "2026-01-13T12:18:53.657090"
+    },
+    "bluetooth": {
+      "x": 115,
+      "y": 212,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "cv_auto",
+      "last_verified": "2026-01-14T13:58:21.480706"
+    },
+    "back_button": {
+      "x": 45,
+      "y": 1,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "ai_detection",
+      "last_verified": "2026-01-18T13:09:50.228931"
+    }
+  },
+  "created_at": "2026-01-12T13:10:45.594281",
+  "updated_at": "2026-01-18T17:01:39.297040"
+}

@@ -1,0 +1,99 @@
+# ═══════════════════════════════════════════════════════════════
+# AI Agent Framework - Git Ignore Rules
+# ═══════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────────────────────────
+# CRITICAL: Environment & Secrets (VIO Tokens)
+# ─────────────────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+*.env
+*_token.txt
+vio_credentials.json
+cloud_llm_config.py
+
+# WARNING: Never commit VIO API tokens!
+# Tokens are company property and expire on specific dates
+
+# ─────────────────────────────────────────────────────────────────
+# Python
+# ─────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+venv/
+ENV/
+env/
+.venv/
+
+# ─────────────────────────────────────────────────────────────────
+# IDE & Editors
+# ─────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.code-workspace
+
+# ─────────────────────────────────────────────────────────────────
+# Testing
+# ─────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+
+# ─────────────────────────────────────────────────────────────────
+# Project-specific Data
+# ─────────────────────────────────────────────────────────────────
+data/screenshots/*
+!data/screenshots/.gitkeep
+data/results/*
+!data/results/.gitkeep
+data/vector_db/*
+!data/vector_db/.gitkeep
+data/test_cases/*.xlsx
+!data/test_cases/.gitkeep
+
+# Learned solutions (sensitive data)
+data/prompts/learned_solutions.md
+
+# ─────────────────────────────────────────────────────────────────
+# Logs
+# ─────────────────────────────────────────────────────────────────
+*.log
+logs/
+*.log.*
+
+# ─────────────────────────────────────────────────────────────────
+# Temporary files
+# ─────────────────────────────────────────────────────────────────
+*.tmp
+temp/
+tmp/
+.cache/
+*.pyc
+*.pyo
+*.bak
