@@ -1,0 +1,15 @@
+{
+  "result_id": "result_20260122_105759_f28acf",
+  "device_id": "device_1408x792",
+  "test_id": "NAID-NEW-001",
+  "step_number": 3,
+  "step_description": "Step 3: Click on Bluetooth option in Settings menu (Expected: Bluetooth settings page should be displayed with available Bluetooth options)",
+  "ssim_score": 0.5722065130158671,
+  "passed": false,
+  "threshold": 0.85,
+  "category": "error",
+  "timestamp": "2026-01-22T10:57:59.965427",
+  "reference_image": "data\\verification_images\\device_1408x792\\bluetooth_opened.png",
+  "actual_image": "data\\screenshots\\screenshot_20260122_105751.jpg",
+  "comparison_image": "data\\verification_results\\device_1408x792\\error\\result_20260122_105759_f28acf_comparison.png"
+}

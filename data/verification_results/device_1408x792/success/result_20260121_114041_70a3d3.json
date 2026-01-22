@@ -1,0 +1,15 @@
+{
+  "result_id": "result_20260121_114041_70a3d3",
+  "device_id": "device_1408x792",
+  "test_id": "manual_verification_20260121_114041",
+  "step_number": 0,
+  "step_description": "bluetooth_opened",
+  "ssim_score": 0.9963678937819436,
+  "passed": true,
+  "threshold": 0.85,
+  "category": "success",
+  "timestamp": "2026-01-21T11:40:41.884882",
+  "reference_image": "data\\verification_images\\device_1408x792\\bluetooth_opened.png",
+  "actual_image": "data\\screenshots\\screenshot_20260121_114032.jpg",
+  "comparison_image": "data\\verification_results\\device_1408x792\\success\\result_20260121_114041_70a3d3_comparison.png"
+}

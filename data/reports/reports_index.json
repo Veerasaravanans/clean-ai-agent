@@ -1,0 +1,44 @@
+{
+  "reports": [
+    {
+      "report_id": "report_20260121_124624_354374",
+      "filename": "report_20260121_124624_354374.pdf",
+      "format": "pdf",
+      "report_type": "detailed",
+      "generated_at": "2026-01-21T12:46:25.414081",
+      "generated_by": "AI Agent Framework",
+      "title": "Test Execution Report",
+      "description": null,
+      "executions_included": 3,
+      "date_range": "2026-01-21 to 2026-01-21",
+      "test_ids_included": [
+        "NAID-NEW-001"
+      ],
+      "file_path": "data\\reports\\report_20260121_124624_354374.pdf",
+      "file_size_bytes": 1167518,
+      "include_screenshots": true,
+      "include_ssim_details": true,
+      "include_charts": true
+    },
+    {
+      "report_id": "report_20260121_124616_a34265",
+      "filename": "report_20260121_124616_a34265.xlsx",
+      "format": "excel",
+      "report_type": "detailed",
+      "generated_at": "2026-01-21T12:46:17.135683",
+      "generated_by": "AI Agent Framework",
+      "title": "Test Execution Report",
+      "description": null,
+      "executions_included": 3,
+      "date_range": "2026-01-21 to 2026-01-21",
+      "test_ids_included": [
+        "NAID-NEW-001"
+      ],
+      "file_path": "data\\reports\\report_20260121_124616_a34265.xlsx",
+      "file_size_bytes": 11592,
+      "include_screenshots": true,
+      "include_ssim_details": true,
+      "include_charts": true
+    }
+  ]
+}

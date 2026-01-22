@@ -1,0 +1,8 @@
+{
+  "result_id": "result_20260121_113027_bdeecc",
+  "device_id": "device_1408x792",
+  "test_id": "manual_verification_20260121_113027",
+  "step_number": 0,
+  "step_description": "bluetooth_opened",
+  "ssim_score": 0.9963657158810588,
+  "passed": 

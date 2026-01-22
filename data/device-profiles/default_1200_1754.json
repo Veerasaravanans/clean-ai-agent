@@ -1,0 +1,18 @@
+{
+  "device_id": "default_1200_1754",
+  "device_info": {
+    "manufacturer": "",
+    "model": "",
+    "screen_resolution": "1200x1754",
+    "android_version": "",
+    "description": "Auto-created profile for 1200x1754"
+  },
+  "detection_rules": {
+    "screen_width": 1200,
+    "screen_height": 1754,
+    "device_name_pattern": ".*"
+  },
+  "icon_coordinates": {},
+  "created_at": "2026-01-21T10:37:37.329279",
+  "updated_at": "2026-01-21T10:37:37.329279"
+}

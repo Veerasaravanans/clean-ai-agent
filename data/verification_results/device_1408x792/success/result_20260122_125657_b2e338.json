@@ -1,0 +1,15 @@
+{
+  "result_id": "result_20260122_125657_b2e338",
+  "device_id": "device_1408x792",
+  "test_id": "NAID-NEW-003",
+  "step_number": 3,
+  "step_description": "Step 3: Click on Notifications option in Settings menu (Expected: Notifications settings page should be displayed with notification configuration options)",
+  "ssim_score": 0.9730639293744295,
+  "passed": true,
+  "threshold": 0.85,
+  "category": "success",
+  "timestamp": "2026-01-22T12:56:57.440263",
+  "reference_image": "data\\verification_images\\device_1408x792\\notifications_opened.png",
+  "actual_image": "data\\screenshots\\screenshot_20260122_125641.jpg",
+  "comparison_image": "data\\verification_results\\device_1408x792\\success\\result_20260122_125657_b2e338_comparison.png"
+}

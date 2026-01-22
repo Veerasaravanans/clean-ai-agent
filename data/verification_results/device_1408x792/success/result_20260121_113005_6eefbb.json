@@ -1,0 +1,8 @@
+{
+  "result_id": "result_20260121_113005_6eefbb",
+  "device_id": "device_1408x792",
+  "test_id": "manual_verification_20260121_113005",
+  "step_number": 0,
+  "step_description": "settings_opened",
+  "ssim_score": 0.9969489633855761,
+  "passed": 

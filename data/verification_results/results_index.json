@@ -1,0 +1,406 @@
+{
+  "success": [
+    {
+      "result_id": "result_20260122_125807_cee6dd",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9729486233620703,
+      "timestamp": "2026-01-22T12:58:07.198318"
+    },
+    {
+      "result_id": "result_20260122_125657_b2e338",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-003",
+      "step_number": 3,
+      "ssim_score": 0.9730639293744295,
+      "timestamp": "2026-01-22T12:56:57.440263"
+    },
+    {
+      "result_id": "result_20260122_125614_a67b5f",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-003",
+      "step_number": 1,
+      "ssim_score": 0.9728597375323375,
+      "timestamp": "2026-01-22T12:56:14.380367"
+    },
+    {
+      "result_id": "result_20260122_125551_4dff6c",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9728341138945081,
+      "timestamp": "2026-01-22T12:55:51.912206"
+    },
+    {
+      "result_id": "result_20260122_115726_570aa5",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.9993150813524434,
+      "timestamp": "2026-01-22T11:57:26.179667"
+    },
+    {
+      "result_id": "result_20260122_115701_cbff0f",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9969810868183095,
+      "timestamp": "2026-01-22T11:57:01.471759"
+    },
+    {
+      "result_id": "result_20260122_115642_165cfb",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9964669893134691,
+      "timestamp": "2026-01-22T11:56:42.576611"
+    },
+    {
+      "result_id": "result_20260122_115051_afd4e7",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9964623626166332,
+      "timestamp": "2026-01-22T11:50:51.624839"
+    },
+    {
+      "result_id": "result_20260122_114154_0d636a",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9966641872056875,
+      "timestamp": "2026-01-22T11:41:54.175686"
+    },
+    {
+      "result_id": "result_20260122_113425_fefcfb",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968961045517372,
+      "timestamp": "2026-01-22T11:34:25.862071"
+    },
+    {
+      "result_id": "result_20260122_113406_37200e",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968835878113116,
+      "timestamp": "2026-01-22T11:34:06.974078"
+    },
+    {
+      "result_id": "result_20260122_113350_df7e4e",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968835878113116,
+      "timestamp": "2026-01-22T11:33:50.118826"
+    },
+    {
+      "result_id": "result_20260122_113331_4581bb",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968835878113116,
+      "timestamp": "2026-01-22T11:33:31.287493"
+    },
+    {
+      "result_id": "result_20260122_113311_a375aa",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968835878113116,
+      "timestamp": "2026-01-22T11:33:11.923235"
+    },
+    {
+      "result_id": "result_20260122_113255_c62656",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968519952734806,
+      "timestamp": "2026-01-22T11:32:55.394008"
+    },
+    {
+      "result_id": "result_20260122_113230_844535",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968519952734806,
+      "timestamp": "2026-01-22T11:32:30.511195"
+    },
+    {
+      "result_id": "result_20260122_113213_c98b81",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968519952734806,
+      "timestamp": "2026-01-22T11:32:13.036709"
+    },
+    {
+      "result_id": "result_20260122_113156_f2dbb4",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.996976346188688,
+      "timestamp": "2026-01-22T11:31:56.501919"
+    },
+    {
+      "result_id": "result_20260122_113136_9aa5ae",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.996976346188688,
+      "timestamp": "2026-01-22T11:31:36.912314"
+    },
+    {
+      "result_id": "result_20260122_113117_21adce",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.996976346188688,
+      "timestamp": "2026-01-22T11:31:17.916038"
+    },
+    {
+      "result_id": "result_20260122_113056_7c2c71",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968919088578052,
+      "timestamp": "2026-01-22T11:30:56.614218"
+    },
+    {
+      "result_id": "result_20260122_113039_30e6f6",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968919088578052,
+      "timestamp": "2026-01-22T11:30:39.520295"
+    },
+    {
+      "result_id": "result_20260122_113019_2f88ac",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9968919088578052,
+      "timestamp": "2026-01-22T11:30:19.769324"
+    },
+    {
+      "result_id": "result_20260122_113002_1cd3fe",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9969489633855761,
+      "timestamp": "2026-01-22T11:30:02.428116"
+    },
+    {
+      "result_id": "result_20260122_112945_22465b",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9969489633855761,
+      "timestamp": "2026-01-22T11:29:45.136488"
+    },
+    {
+      "result_id": "result_20260122_112921_e232fa",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9969489633855761,
+      "timestamp": "2026-01-22T11:29:21.802835"
+    },
+    {
+      "result_id": "result_20260122_112902_6c7220",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.99695373591541,
+      "timestamp": "2026-01-22T11:29:02.427104"
+    },
+    {
+      "result_id": "result_20260122_112713_087b6b",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9966170251326555,
+      "timestamp": "2026-01-22T11:27:13.153525"
+    },
+    {
+      "result_id": "result_20260122_110741_27ca80",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.9995763656050887,
+      "timestamp": "2026-01-22T11:07:41.215321"
+    },
+    {
+      "result_id": "result_20260122_110722_d4bd79",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9969268727698187,
+      "timestamp": "2026-01-22T11:07:22.197025"
+    },
+    {
+      "result_id": "result_20260122_110702_2aa2b1",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9964879248126477,
+      "timestamp": "2026-01-22T11:07:02.608586"
+    },
+    {
+      "result_id": "result_20260122_110008_d982a2",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-003",
+      "step_number": 3,
+      "ssim_score": 0.9530893665420932,
+      "timestamp": "2026-01-22T11:00:08.636479"
+    },
+    {
+      "result_id": "result_20260122_105946_1f5951",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-003",
+      "step_number": 2,
+      "ssim_score": 0.9970843337192249,
+      "timestamp": "2026-01-22T10:59:46.584794"
+    },
+    {
+      "result_id": "result_20260122_105922_bf8c46",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-003",
+      "step_number": 1,
+      "ssim_score": 0.9965676060282829,
+      "timestamp": "2026-01-22T10:59:22.582918"
+    },
+    {
+      "result_id": "result_20260122_105641_edc52b",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9971048375899783,
+      "timestamp": "2026-01-22T10:56:41.224523"
+    },
+    {
+      "result_id": "result_20260122_105513_d0fb92",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.8812170960101547,
+      "timestamp": "2026-01-22T10:55:13.197683"
+    },
+    {
+      "result_id": "result_20260121_130009_44a420",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9970682406529131,
+      "timestamp": "2026-01-21T13:00:09.471209"
+    },
+    {
+      "result_id": "result_20260121_125916_36deec",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9966236485400015,
+      "timestamp": "2026-01-21T12:59:16.094315"
+    },
+    {
+      "result_id": "result_20260121_120410_8a406b",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.9965344956870577,
+      "timestamp": "2026-01-21T12:04:10.194088"
+    },
+    {
+      "result_id": "result_20260121_120346_954a5e",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.9970071227290567,
+      "timestamp": "2026-01-21T12:03:46.889023"
+    },
+    {
+      "result_id": "result_20260121_120327_5ef5fe",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 1,
+      "ssim_score": 0.9966303498597905,
+      "timestamp": "2026-01-21T12:03:27.553852"
+    },
+    {
+      "result_id": "result_20260121_114041_70a3d3",
+      "device_id": "device_1408x792",
+      "test_id": "manual_verification_20260121_114041",
+      "step_number": 0,
+      "ssim_score": 0.9963678937819436,
+      "timestamp": "2026-01-21T11:40:41.884882"
+    },
+    {
+      "result_id": "result_20260121_114021_106702",
+      "device_id": "device_1408x792",
+      "test_id": "manual_verification_20260121_114021",
+      "step_number": 0,
+      "ssim_score": 0.996869981450441,
+      "timestamp": "2026-01-21T11:40:21.975742"
+    },
+    {
+      "result_id": "result_20260121_114001_a9474d",
+      "device_id": "device_1408x792",
+      "test_id": "manual_verification_20260121_114001",
+      "step_number": 0,
+      "ssim_score": 0.9965322104329261,
+      "timestamp": "2026-01-21T11:40:01.350738"
+    }
+  ],
+  "error": [
+    {
+      "result_id": "result_20260122_125824_713172",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.8134546174716868,
+      "timestamp": "2026-01-22T12:58:24.936575"
+    },
+    {
+      "result_id": "result_20260122_105900_822282",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.5726567819457087,
+      "timestamp": "2026-01-22T10:59:00.556222"
+    },
+    {
+      "result_id": "result_20260122_105759_f28acf",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.5722065130158671,
+      "timestamp": "2026-01-22T10:57:59.965427"
+    },
+    {
+      "result_id": "result_20260122_105701_eb6631",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.5723991599166355,
+      "timestamp": "2026-01-22T10:57:01.111253"
+    },
+    {
+      "result_id": "result_20260122_105541_e83449",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 2,
+      "ssim_score": 0.8069088517195585,
+      "timestamp": "2026-01-22T10:55:41.854037"
+    },
+    {
+      "result_id": "result_20260121_130029_d15e3b",
+      "device_id": "device_1408x792",
+      "test_id": "NAID-NEW-001",
+      "step_number": 3,
+      "ssim_score": 0.5699771366266904,
+      "timestamp": "2026-01-21T13:00:29.511873"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "result_id": "result_20260121_114021_106702",
+  "device_id": "device_1408x792",
+  "test_id": "manual_verification_20260121_114021",
+  "step_number": 0,
+  "step_description": "settings_opened",
+  "ssim_score": 0.996869981450441,
+  "passed": true,
+  "threshold": 0.85,
+  "category": "success",
+  "timestamp": "2026-01-21T11:40:21.975742",
+  "reference_image": "data\\verification_images\\device_1408x792\\settings_opened.png",
+  "actual_image": "data\\screenshots\\screenshot_20260121_114012.jpg",
+  "comparison_image": "data\\verification_results\\device_1408x792\\success\\result_20260121_114021_106702_comparison.png"
+}
