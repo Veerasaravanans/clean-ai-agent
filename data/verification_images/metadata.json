@@ -14,26 +14,26 @@
       "created_at": "2026-01-15T17:11:21.549089",
       "source_path": "data\\screenshots\\verification_temp_app_launcher_opened.jpg"
     },
-    "settings_opened.png": {
-      "original_name": "settings_opened",
-      "clean_name": "settings_opened.png",
-      "description": "",
-      "created_at": "2026-01-15T17:12:04.869799",
-      "source_path": "data\\screenshots\\verification_temp_settings_opened.jpg"
-    },
-    "bluetooth_opened.png": {
-      "original_name": "bluetooth_opened",
-      "clean_name": "bluetooth_opened.png",
-      "description": "",
-      "created_at": "2026-01-15T20:41:28.738140",
-      "source_path": "data\\screenshots\\verification_temp_bluetooth_opened.jpg"
-    },
     "notifications_opened.png": {
       "original_name": "notifications_opened",
       "clean_name": "notifications_opened.png",
       "description": "",
       "created_at": "2026-01-15T20:54:51.730705",
       "source_path": "data\\screenshots\\verification_temp_notifications_opened.jpg"
+    },
+    "settings_opened.png": {
+      "original_name": "settings_opened",
+      "clean_name": "settings_opened.png",
+      "description": "",
+      "created_at": "2026-01-20T16:29:49.594327",
+      "source_path": "data\\screenshots\\verification_temp_settings_opened.jpg"
+    },
+    "bluetooth_opened.png": {
+      "original_name": "bluetooth_opened",
+      "clean_name": "bluetooth_opened.png",
+      "description": "",
+      "created_at": "2026-01-22T11:01:14.308383",
+      "source_path": "data\\screenshots\\verification_temp_bluetooth_opened.jpg"
     }
   }
 }

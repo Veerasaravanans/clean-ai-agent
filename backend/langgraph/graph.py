@@ -108,43 +108,67 @@ def create_agent_graph() -> StateGraph:
     # 4. Parse intent → capture screen
     workflow.add_edge("parse_intent", "capture_screen")
     
-    # 5. Capture screen → AI analyze
-    workflow.add_edge("capture_screen", "ai_analyze")
+    # 5. Capture screen → AI analyze (CRITICAL: includes stop → END)
+    workflow.add_conditional_edges(
+        "capture_screen",
+        edges.route_after_capture,
+        {
+            "analyze": "ai_analyze",
+            "end": END
+        }
+    )
+
+    # 6. AI analyze → plan action (CRITICAL: includes stop → END)
+    workflow.add_conditional_edges(
+        "ai_analyze",
+        edges.route_after_analyze,
+        {
+            "plan": "plan_action",
+            "end": END
+        }
+    )
     
-    # 6. AI analyze → plan action
-    workflow.add_edge("ai_analyze", "plan_action")
-    
-    # 7. Plan action → route to execute or direct
+    # 7. Plan action → route to execute or direct (CRITICAL: includes stop → END)
     workflow.add_conditional_edges(
         "plan_action",
         edges.route_from_planning,
         {
             "execute": "execute_adb",
             "direct": "direct_execute",
-            "error": "wait_human"
+            "error": "wait_human",
+            "end": END  # CRITICAL: Stop condition routes to END
         }
     )
     
-    # 8. Direct execute → verify
-    workflow.add_edge("direct_execute", "verify_result")
+    # 8. Direct execute → verify (CRITICAL: includes stop → END)
+    workflow.add_conditional_edges(
+        "direct_execute",
+        edges.route_after_direct_execute,
+        {
+            "verify": "verify_result",
+            "end": END  # CRITICAL: Stop condition routes to END
+        }
+    )
     
-    # 9. Execute ADB → route based on success
+    # 9. Execute ADB → route based on success (CRITICAL: includes stop → END)
     workflow.add_conditional_edges(
         "execute_adb",
         edges.route_after_execution,
         {
             "verify": "verify_result",
-            "retry": "increment_retry"
+            "retry": "increment_retry",
+            "end": END  # CRITICAL: Stop condition routes to END
         }
     )
     
-    # 10. Verify result → route based on verification
+    # 10. Verify result → route based on verification (CRITICAL: includes stop → END)
     workflow.add_conditional_edges(
         "verify_result",
         edges.route_after_verification,
         {
             "success": "next_step",
-            "retry": "increment_retry"
+            "retry": "increment_retry",
+            "end": END  # CRITICAL: Stop condition routes to END
         }
     )
     
@@ -174,19 +198,27 @@ def create_agent_graph() -> StateGraph:
     # After applying HITL guidance, retry the action with new coordinates
     workflow.add_edge("apply_guidance", "execute_adb")
     
-    # 14. Next step → check if complete
+    # 14. Next step → check if complete (CRITICAL: includes stop → END)
     workflow.add_conditional_edges(
-    "next_step",
-    route_after_next_step,
-    {
-        "save_learned": "save_learned",
-        "direct_execute": "direct_execute",
-        "capture_screen": "capture_screen"
-    }
-)
+        "next_step",
+        route_after_next_step,
+        {
+            "save_learned": "save_learned",
+            "direct_execute": "direct_execute",
+            "capture_screen": "capture_screen",
+            "end": END  # CRITICAL: Stop condition routes to END
+        }
+    )
     
-    # 15. Save learned → log results
-    workflow.add_edge("save_learned", "log_results")
+    # 15. Save learned → log results (CRITICAL: includes stop → END)
+    workflow.add_conditional_edges(
+        "save_learned",
+        edges.route_after_save_learned,
+        {
+            "log": "log_results",
+            "end": END
+        }
+    )
     
     # 16. Log results → END
     workflow.add_edge("log_results", END)

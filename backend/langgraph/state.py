@@ -25,6 +25,7 @@ class AgentState(TypedDict, total=False):
     # Test Execution State
     # ═══════════════════════════════════════════════════════════
     test_id: Optional[str]  # Current test ID (e.g., "TEST-001")
+    execution_id: Optional[str]  # Execution ID for test history tracking
     test_description: Optional[str]  # Test case description
     test_steps: Optional[List[str]]  # List of test steps to execute
     current_step: int  # Current step index (0-based)
@@ -95,20 +96,22 @@ class AgentState(TypedDict, total=False):
 def create_initial_state(
     mode: AgentMode = AgentMode.IDLE,
     test_id: Optional[str] = None,
+    execution_id: Optional[str] = None,
     standalone_command: Optional[str] = None,
     use_learned: bool = True,
     max_retries: int = 3
 ) -> AgentState:
     """
     Create initial agent state.
-    
+
     Args:
         mode: Agent mode (test_execution, standalone, idle)
         test_id: Test ID for test execution mode
+        execution_id: Execution ID for test history tracking
         standalone_command: Command for standalone mode
         use_learned: Whether to use learned solutions
         max_retries: Maximum retry attempts
-        
+
     Returns:
         Initial AgentState
     """
@@ -116,9 +119,10 @@ def create_initial_state(
         # Mode & Status
         current_mode=mode,
         status=AgentStatus.IDLE,
-        
+
         # Test Execution
         test_id=test_id,
+        execution_id=execution_id,
         test_description=None,
         test_steps=None,
         current_step=0,

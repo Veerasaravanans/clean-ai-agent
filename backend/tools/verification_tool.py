@@ -10,6 +10,7 @@ import base64
 from typing import Optional
 from pathlib import Path
 from difflib import SequenceMatcher
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -624,25 +625,119 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
                 'reasoning': f'Verification error: {str(e)}',
                 'confidence': 50
             }
-        
+
+    def _create_comparison_image(
+        self,
+        actual_path: str,
+        reference_path: str,
+        ssim_score: float,
+        passed: bool
+    ) -> Optional[str]:
+        """
+        Create a side-by-side comparison image for visual debugging.
+
+        Args:
+            actual_path: Path to actual screenshot
+            reference_path: Path to reference image
+            ssim_score: SSIM similarity score
+            passed: Whether verification passed
+
+        Returns:
+            Path to comparison image or None if failed
+        """
+        try:
+            # Load images
+            actual = cv2.imread(actual_path)
+            reference = cv2.imread(reference_path)
+
+            if actual is None or reference is None:
+                return None
+
+            # Resize to same height if needed
+            h1, w1 = actual.shape[:2]
+            h2, w2 = reference.shape[:2]
+
+            target_height = min(h1, h2, 720)  # Cap at 720p for reasonable file size
+            scale1 = target_height / h1
+            scale2 = target_height / h2
+
+            actual_resized = cv2.resize(actual, (int(w1 * scale1), target_height))
+            reference_resized = cv2.resize(reference, (int(w2 * scale2), target_height))
+
+            # Create side-by-side image with labels
+            gap = 10
+            label_height = 40
+            total_width = actual_resized.shape[1] + reference_resized.shape[1] + gap
+            total_height = target_height + label_height * 2
+
+            # Create canvas (white background)
+            canvas = np.ones((total_height, total_width, 3), dtype=np.uint8) * 255
+
+            # Place images
+            y_offset = label_height
+            canvas[y_offset:y_offset + target_height, 0:actual_resized.shape[1]] = actual_resized
+            canvas[y_offset:y_offset + target_height, actual_resized.shape[1] + gap:] = reference_resized
+
+            # Add labels
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            font_scale = 0.7
+            thickness = 2
+
+            # Status color
+            status_color = (0, 128, 0) if passed else (0, 0, 255)  # Green/Red in BGR
+
+            # "Actual" label
+            cv2.putText(canvas, "ACTUAL", (10, 28), font, font_scale, (0, 0, 0), thickness)
+
+            # "Reference" label
+            cv2.putText(canvas, "REFERENCE", (actual_resized.shape[1] + gap + 10, 28),
+                       font, font_scale, (0, 0, 0), thickness)
+
+            # SSIM score and status at bottom
+            status_text = f"SSIM: {ssim_score:.4f} - {'PASS' if passed else 'FAIL'}"
+            cv2.putText(canvas, status_text, (10, total_height - 12),
+                       font, font_scale, status_color, thickness)
+
+            # Save comparison image
+            comparison_dir = Path("data/verification_comparisons")
+            comparison_dir.mkdir(parents=True, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            comparison_path = comparison_dir / f"comparison_{timestamp}.png"
+
+            cv2.imwrite(str(comparison_path), canvas)
+            logger.debug(f"Created comparison image: {comparison_path}")
+
+            return str(comparison_path)
+
+        except Exception as e:
+            logger.debug(f"Failed to create comparison image: {e}")
+            return None
 
     def verify_with_ssim(
         self,
         screenshot_path: str,
         reference_image_name: str,
-        similarity_threshold: float = 0.85
+        similarity_threshold: float = 0.85,
+        test_id: Optional[str] = None,
+        step_number: int = 0,
+        step_description: str = ""
     ) -> dict:
         """
         PRIMARY VERIFICATION: Compare screenshot with reference image using SSIM.
-        
+
         This is the main verification method for industrial testing.
         Uses Structural Similarity Index (SSIM) for accurate comparison.
-        
+        Results are automatically saved to verification history.
+
         Args:
             screenshot_path: Path to captured screenshot
             reference_image_name: Name of reference image (e.g., "app_launcher_opened")
             similarity_threshold: SSIM threshold (0-1, default 0.85)
-            
+            test_id: Optional test case ID for tracking
+            step_number: Step number within the test
+            step_description: Description of the verification step
+
         Returns:
             dict: {
                 'passed': bool,
@@ -650,7 +745,8 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
                 'threshold': float,
                 'method': 'ssim',
                 'reference_found': bool,
-                'message': str
+                'message': str,
+                'result_id': str (if saved)
             }
         """
         if not SSIM_AVAILABLE:
@@ -745,12 +841,40 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
             
             # Check if passed
             passed = similarity_score >= similarity_threshold
-            
+
             if passed:
                 logger.info(f"✅ SSIM Verification PASSED: {similarity_score:.4f} >= {similarity_threshold}")
             else:
                 logger.warning(f"❌ SSIM Verification FAILED: {similarity_score:.4f} < {similarity_threshold}")
-            
+
+            # Create side-by-side comparison image for debugging
+            comparison_image_path = None
+            try:
+                comparison_image_path = self._create_comparison_image(
+                    screenshot_path,
+                    str(reference_path),
+                    similarity_score,
+                    passed
+                )
+            except Exception as comp_err:
+                logger.debug(f"Comparison image creation failed: {comp_err}")
+
+            # Save verification result to history (always save, generate test_id if needed)
+            result_id = None
+            actual_test_id = test_id or f"manual_verification_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            result_id = verification_service.save_verification_result(
+                device_id=device_id,
+                test_id=actual_test_id,
+                step_number=step_number,
+                step_description=step_description or reference_image_name,
+                ssim_score=float(similarity_score),
+                passed=passed,
+                reference_image_path=str(reference_path),
+                actual_image_path=screenshot_path,
+                comparison_image_path=comparison_image_path,
+                threshold=similarity_threshold
+            )
+
             return {
                 'passed': passed,
                 'similarity': float(similarity_score),
@@ -758,7 +882,9 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
                 'method': 'ssim',
                 'reference_found': True,
                 'reference_image': reference_image_name,
-                'message': f'SSIM: {similarity_score:.4f} (threshold: {similarity_threshold})'
+                'message': f'SSIM: {similarity_score:.4f} (threshold: {similarity_threshold})',
+                'result_id': result_id,
+                'comparison_image': comparison_image_path
             }
             
         except Exception as e:
@@ -780,22 +906,28 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
         before_screenshot: str,
         after_screenshot: str,
         reference_image_name: Optional[str] = None,
-        ssim_threshold: float = 0.85
+        ssim_threshold: float = 0.85,
+        test_id: Optional[str] = None,
+        step_number: int = 0,
+        step_description: str = ""
     ) -> dict:
         """
         Comprehensive verification combining SSIM (primary) and other methods (secondary).
-        
+
         PRIORITY:
         1. SSIM verification (PRIMARY - must pass)
         2. Pixel change (SECONDARY - informational)
         3. AI verification (SECONDARY - informational)
-        
+
         Args:
             before_screenshot: Screenshot before action
             after_screenshot: Screenshot after action
             reference_image_name: Expected state reference image name
             ssim_threshold: SSIM similarity threshold
-            
+            test_id: Test case ID for tracking
+            step_number: Current step number (1-based)
+            step_description: Description of the current step
+
         Returns:
             dict: {
                 'overall_passed': bool,  # Based on SSIM only
@@ -810,18 +942,21 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
             'pixel_verification': None,
             'ai_verification': None
         }
-        
+
         # 1. PRIMARY: SSIM Verification
         if reference_image_name:
             logger.info(f"🔍 PRIMARY Verification: SSIM with '{reference_image_name}'")
             ssim_result = self.verify_with_ssim(
                 after_screenshot,
                 reference_image_name,
-                ssim_threshold
+                ssim_threshold,
+                test_id=test_id,
+                step_number=step_number,
+                step_description=step_description
             )
             results['ssim_verification'] = ssim_result
             results['overall_passed'] = ssim_result['passed']
-            
+
             if ssim_result['passed']:
                 logger.info("✅ PRIMARY Verification: PASSED")
             else:

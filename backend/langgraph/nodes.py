@@ -9,14 +9,44 @@ UPDATED: Includes SSIM-based verification and status fix
 """
 
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from backend.services.device_profile_service import get_device_profile_service
 from backend.services.verification_image_service import get_verification_image_service
+from backend.services.execution_control import get_execution_control
 from backend.langgraph.state import AgentState
 from backend.models import AgentMode, AgentStatus
 from backend.tools import toolkit
 
 logger = logging.getLogger(__name__)
+
+
+def _check_execution_control(state: AgentState) -> Tuple[bool, Optional[AgentState]]:
+    """
+    Check execution control flags (stop/pause).
+
+    This should be called at the start of key nodes to allow
+    stopping or pausing execution.
+
+    Returns:
+        Tuple of (should_continue, stopped_state)
+        - If should_continue is True, proceed normally
+        - If should_continue is False, return stopped_state
+    """
+    control = get_execution_control()
+
+    # Check and wait if paused (this blocks until resumed or stopped)
+    if not control.check_and_wait():
+        # Stop was requested
+        logger.info("🛑 Execution stopped by user")
+        return False, {
+            **state,
+            "status": AgentStatus.STOPPED,
+            "stop_requested": True,
+            "should_continue": False,
+            "execution_log": state.get("execution_log", []) + ["Execution stopped by user"]
+        }
+
+    return True, None
 _reference_cache = {}
 
 def _parse_reference_name_from_target_cached(target_element: str) -> Optional[str]:
@@ -260,17 +290,22 @@ def check_learned(state: AgentState) -> AgentState:
 def capture_screen(state: AgentState) -> AgentState:
     """
     Capture current device screen.
-    
+
     Uses screenshot tool to capture device display.
-    
+
     Args:
         state: Current agent state
-        
+
     Returns:
         Updated state with current_screenshot path
     """
+    # Check for stop/pause
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     logger.info("📸 Capturing screen...")
-    
+
     try:
         # Capture screenshot
         screenshot_path = toolkit.screenshot.capture()
@@ -309,18 +344,23 @@ def capture_screen(state: AgentState) -> AgentState:
 def ai_analyze(state: AgentState) -> AgentState:
     """
     Analyze screen using VIO Cloud AI Vision.
-    
+
     Uses vision tool to:
     - Describe screen contents
     - Identify interactive elements
     - Determine current app state
-    
+
     Args:
         state: Current agent state
-        
+
     Returns:
         Updated state with screen_analysis and detected_elements
     """
+    # Check execution control (stop/pause) FIRST
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     screenshot_path = state.get("current_screenshot")
     current_step_desc = ""
     
@@ -405,16 +445,21 @@ def ai_analyze(state: AgentState) -> AgentState:
 def plan_action(state: AgentState) -> AgentState:
     """
     Plan next action - FULLY AI-DRIVEN (ZERO HARDCODING).
-    
+
     Uses AI for:
     1. Target extraction from goal
     2. Action type determination
     3. Navigation decisions
-    
+
     NO hardcoded word lists.
     NO assumptions about filler words or action words.
     Completely dynamic.
     """
+    # Check execution control (stop/pause) FIRST
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     screen_analysis = state.get("screen_analysis", "")
     detected_elements = state.get("detected_elements", [])
     screenshot_path = state.get("current_screenshot")
@@ -677,13 +722,18 @@ Respond with JSON:
 def direct_execute(state: AgentState) -> AgentState:
     """
     Execute action from learned solution.
-    
+
     Captures screenshot BEFORE action for verification comparison.
     """
+    # Check for stop/pause before execution
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     current_step = state.get("current_step", 0)
     learned_solution = state.get("learned_solution", {})
     learned_steps = learned_solution.get("steps", [])
-    
+
     logger.info(f"⚡ Direct execute step {current_step}")
     
     # ═══════════════════════════════════════════════════════════
@@ -870,15 +920,20 @@ def direct_execute(state: AgentState) -> AgentState:
 def execute_adb(state: AgentState) -> AgentState:
     """
     Execute ADB action - FULLY AI-DRIVEN.
-    
+
     NO hardcoded keyword checks.
     Just trust the action_type that was determined by AI.
     """
+    # Check for stop/pause before execution
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     action_type = state.get("action_type")
     target_element = state.get("target_element")
     coordinates = state.get("target_coordinates")
     parameters = state.get("action_parameters", {})
-    
+
     logger.info(f"⚡ Executing: {action_type}")
     logger.info(f"   Target: {target_element}")
     logger.info(f"   Coords: {coordinates}")
@@ -1331,14 +1386,19 @@ Expected reference image name:"""
 def verify_result(state: AgentState) -> AgentState:
     """
     Verify action result using COMPREHENSIVE VERIFICATION.
-    
+
     PRIORITY:
     1. SSIM verification (PRIMARY - must pass to continue)
     2. Pixel change (SECONDARY - informational only)
     3. AI verification (SECONDARY - informational only)
-    
+
     Also saves coordinates to device profile if from new AI detection.
     """
+    # Check execution control (stop/pause) FIRST
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     before_screenshot = state.get("current_screenshot")
     action_type = state.get("action_type")
     target_element = state.get("target_element", "")
@@ -1367,20 +1427,31 @@ def verify_result(state: AgentState) -> AgentState:
         
         # Get reference image name for SSIM verification
         reference_image_name = _get_reference_image_name(state)
-        
+
+        # Get step information for verification tracking
+        current_step = state.get("current_step", 0)
+        test_id = state.get("test_id")
+        test_steps = state.get("test_steps", [])
+        step_description = ""
+        if current_step < len(test_steps):
+            step_description = test_steps[current_step]
+
         # ═════════════════════════════════════════════════════════
         # COMPREHENSIVE VERIFICATION (SSIM PRIMARY)
         # ═════════════════════════════════════════════════════════
-        
+
         from backend.tools.verification_tool import VerificationTool
         verification_tool = VerificationTool()
-        
+
         # Perform comprehensive verification with SSIM
         verification_result = verification_tool.comprehensive_verification(
             before_screenshot=before_screenshot,
             after_screenshot=after_screenshot,
             reference_image_name=reference_image_name,
-            ssim_threshold=0.85  # Configurable threshold
+            ssim_threshold=0.85,  # Configurable threshold
+            test_id=test_id,
+            step_number=current_step + 1,  # Convert to 1-based for display
+            step_description=step_description
         )
         
         # Log results
@@ -1478,7 +1549,63 @@ def verify_result(state: AgentState) -> AgentState:
                         logger.warning(f"⚠️ Failed to learn coordinate: {e}")
             elif using_learned or coord_source in ["learned", "device_profile", "profile"]:
                 logger.debug(f"📍 Skipping coordinate save (source: {coord_source or 'learned_solution'})")
-        
+
+        # ═════════════════════════════════════════════════════════
+        # RECORD STEP IN TEST HISTORY
+        # ═════════════════════════════════════════════════════════
+        execution_id = state.get("execution_id")
+        if execution_id:
+            try:
+                from backend.services.test_history_service import get_test_history_service
+                history_service = get_test_history_service()
+
+                # Extract coordinates info
+                coordinates = state.get("target_coordinates")
+                coord_x, coord_y, coord_source = None, None, None
+                if isinstance(coordinates, dict):
+                    coord_x = coordinates.get("x")
+                    coord_y = coordinates.get("y")
+                    coord_source = coordinates.get("source", "unknown")
+                elif isinstance(coordinates, (list, tuple)) and len(coordinates) >= 2:
+                    coord_x, coord_y = coordinates[0], coordinates[1]
+                    coord_source = "detection"
+
+                # Get comparison image path from SSIM result
+                comparison_image_path = None
+                if ssim_result and ssim_result.get("comparison_image"):
+                    comparison_image_path = ssim_result.get("comparison_image")
+
+                # Add step to history
+                history_service.add_step(
+                    execution_id=execution_id,
+                    step_number=current_step + 1,  # 1-based
+                    description=step_description,
+                    goal=reference_image_name.replace("_", " ") if reference_image_name else None,
+                    action_type=state.get("action_type"),
+                    action_target=state.get("target_element"),
+                    coordinates_x=int(coord_x) if coord_x else None,
+                    coordinates_y=int(coord_y) if coord_y else None,
+                    coordinate_source=coord_source,
+                    used_learned_solution=using_learned,
+                    before_screenshot_path=before_screenshot
+                )
+
+                # Update step with verification results
+                history_service.update_step(
+                    execution_id=execution_id,
+                    step_number=current_step + 1,
+                    status="success" if overall_passed else "failure",
+                    ssim_score=ssim_result.get("similarity") if ssim_result else None,
+                    ssim_passed=ssim_result.get("passed") if ssim_result else None,
+                    ssim_threshold=ssim_result.get("threshold") if ssim_result else None,
+                    reference_image_name=reference_image_name,
+                    after_screenshot_path=after_screenshot,
+                    comparison_image_path=comparison_image_path
+                )
+                logger.debug(f"📊 Recorded step {current_step + 1} in test history")
+            except Exception as hist_err:
+                logger.warning(f"⚠️ Failed to record step in history: {hist_err}")
+
         return {
             **state,
             "current_screenshot": after_screenshot,
@@ -1515,9 +1642,14 @@ def verify_result(state: AgentState) -> AgentState:
 def save_learned(state: AgentState) -> AgentState:
     """
     Save learned solution after successful test execution.
-    
+
     Uses the captured executed_steps data - fully dynamic, no parsing.
     """
+    # Check execution control (stop/pause) FIRST
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     test_id = state.get("test_id")
     logger.info(f"💾 Saving learned solution: {test_id}")
     
@@ -1585,13 +1717,18 @@ def save_learned(state: AgentState) -> AgentState:
 def next_step(state: AgentState) -> AgentState:
     """
     Move to next test step after successful action.
-    
+
     Preserves learned solution state for subsequent steps.
     """
+    # Check for stop/pause before proceeding to next step
+    should_continue, stopped_state = _check_execution_control(state)
+    if not should_continue:
+        return stopped_state
+
     current_step = state.get("current_step", 1)
     total_steps = state.get("total_steps", 1)
     test_steps = state.get("test_steps", [])
-    
+
     logger.info(f"➡️ Moving to next step: {current_step}/{total_steps}")
 
     # CRITICAL FIX: Check if we just completed a HITL retry

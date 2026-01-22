@@ -37,7 +37,7 @@ from backend.models.schemas import (
     InputTextRequest,
     IndexTestCasesRequest,
     SearchTestsRequest,
-    
+
     # Responses
     BaseResponse,
     RunTestsResponse,
@@ -53,12 +53,41 @@ from backend.models.schemas import (
     SearchTestsResponse,
     LearnedSolutionResponse,
     RAGStatsResponse,
-    
+
     # WebSocket
     WSLogMessage,
     WSStatusMessage,
     WSHITLMessage,
     WSScreenMessage
+)
+
+# Test History Models
+from backend.models.test_history import (
+    ExecutionStatus,
+    StepRecord,
+    TestExecutionRecord,
+    DailyStats,
+    TestCaseStats,
+    TestAnalytics,
+    DashboardSummary,
+    ExecutionListRequest,
+    ExecutionListResponse,
+    ExecutionDetailResponse,
+    AnalyticsResponse,
+    SummaryResponse,
+    DeleteExecutionResponse
+)
+
+# Report Models
+from backend.models.reports import (
+    ReportFormat,
+    ReportType,
+    GenerateReportRequest,
+    ReportMetadata,
+    GenerateReportResponse,
+    ReportListResponse,
+    ReportDetailResponse,
+    DeleteReportResponse
 )
 
 __all__ = [
@@ -120,4 +149,29 @@ __all__ = [
     "WSStatusMessage",
     "WSHITLMessage",
     "WSScreenMessage",
+
+    # Test History
+    "ExecutionStatus",
+    "StepRecord",
+    "TestExecutionRecord",
+    "DailyStats",
+    "TestCaseStats",
+    "TestAnalytics",
+    "DashboardSummary",
+    "ExecutionListRequest",
+    "ExecutionListResponse",
+    "ExecutionDetailResponse",
+    "AnalyticsResponse",
+    "SummaryResponse",
+    "DeleteExecutionResponse",
+
+    # Reports
+    "ReportFormat",
+    "ReportType",
+    "GenerateReportRequest",
+    "ReportMetadata",
+    "GenerateReportResponse",
+    "ReportListResponse",
+    "ReportDetailResponse",
+    "DeleteReportResponse",
 ]

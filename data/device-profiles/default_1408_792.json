@@ -85,15 +85,6 @@
       "verified_by": "hitl",
       "last_verified": "2026-01-12T17:11:34.967739"
     },
-    "settings": {
-      "x": 1209,
-      "y": 437,
-      "alternatives": [],
-      "location_hint": "",
-      "verified": true,
-      "verified_by": "hitl",
-      "last_verified": "2026-01-14T17:51:06.250090"
-    },
     "hvac": {
       "x": 740,
       "y": 740,
@@ -110,7 +101,7 @@
       "location_hint": "",
       "verified": true,
       "verified_by": "ai_detection",
-      "last_verified": "2026-01-19T12:27:59.944423"
+      "last_verified": "2026-01-20T12:52:37.150157"
     },
     "climate": {
       "x": 740,
@@ -130,16 +121,25 @@
       "verified_by": "cv_auto",
       "last_verified": "2026-01-14T13:58:21.480706"
     },
-    "back_button": {
-      "x": 45,
-      "y": 1,
+    "settings": {
+      "x": 169,
+      "y": 129,
       "alternatives": [],
       "location_hint": "",
       "verified": true,
       "verified_by": "ai_detection",
-      "last_verified": "2026-01-18T13:09:50.228931"
+      "last_verified": "2026-01-22T10:56:48.929913"
+    },
+    "coordinates_718,_396": {
+      "x": 718,
+      "y": 396,
+      "alternatives": [],
+      "location_hint": "",
+      "verified": true,
+      "verified_by": "cv_auto",
+      "last_verified": "2026-01-22T12:44:32.302899"
     }
   },
   "created_at": "2026-01-12T13:10:45.594281",
-  "updated_at": "2026-01-19T12:27:59.944423"
+  "updated_at": "2026-01-22T12:44:32.302899"
 }

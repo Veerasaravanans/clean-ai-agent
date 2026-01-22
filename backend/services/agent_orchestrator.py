@@ -2,6 +2,7 @@
 agent_orchestrator.py - Agent Orchestrator Service
 
 Manages LangGraph workflow execution, state, and HITL.
+Integrated with Test History Service for execution tracking.
 
 MINIMAL FIX: Only send_guidance() changed to async with graph re-invocation.
 """
@@ -14,6 +15,9 @@ from datetime import datetime
 from backend.langgraph import create_agent_graph, create_initial_state
 from backend.langgraph.state import AgentState
 from backend.models import AgentMode, AgentStatus
+from backend.models.test_history import ExecutionStatus
+from backend.services.test_history_service import get_test_history_service
+from backend.services.execution_control import get_execution_control
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +39,9 @@ class AgentOrchestrator:
         self.current_state: Optional[AgentState] = None
         self.execution_active = False
         self.execution_task: Optional[asyncio.Task] = None
-        
+        self.current_execution_id: Optional[str] = None  # Track current execution for history
+        self.execution_control = get_execution_control()  # Shared control for stop/pause
+
         logger.info("✅ Agent Orchestrator initialized")
     
     # ═══════════════════════════════════════════════════════════════
@@ -95,18 +101,35 @@ class AgentOrchestrator:
                 }
         
         logger.info(f"▶️ Starting test execution: {test_id}")
-        
+
+        # Initialize history service and create execution record
+        history_service = get_test_history_service()
+        execution_record = None
+
         try:
-            # Create initial state
-            self.current_state = create_initial_state(
-                mode=AgentMode.TEST_EXECUTION,
+            # Signal execution start to control
+            self.execution_control.start_execution()
+
+            # Create execution record in history
+            execution_record = history_service.create_execution(
                 test_id=test_id,
                 use_learned=use_learned,
                 max_retries=max_retries
             )
-            
+            self.current_execution_id = execution_record.execution_id
+            logger.info(f"📊 Created history record: {execution_record.execution_id}")
+
+            # Create initial state with execution_id for history tracking
+            self.current_state = create_initial_state(
+                mode=AgentMode.TEST_EXECUTION,
+                test_id=test_id,
+                execution_id=execution_record.execution_id,
+                use_learned=use_learned,
+                max_retries=max_retries
+            )
+
             self.execution_active = True
-            
+
             # Run graph synchronously (LangGraph invoke)
             config = {"recursion_limit": 100}
             result_state = await asyncio.to_thread(
@@ -114,47 +137,77 @@ class AgentOrchestrator:
                 self.current_state,
                 config
             )
-            
+
             self.current_state = result_state
             self.execution_active = False
-            
+            self.execution_control.end_execution()
+
             # Extract result safely
             status = result_state.get("status", AgentStatus.FAILURE)
             errors = result_state.get("errors", [])
-            
+
             # Handle status safely
             if isinstance(status, str):
                 status_str = status
-                success = status == "success"
+                # Check for both "success" and "passed" status strings
+                success = status.lower() in ("success", "passed")
             elif hasattr(status, 'value'):
                 status_str = status.value
                 success = status == AgentStatus.SUCCESS
             else:
                 status_str = str(status) if status else "unknown"
                 success = False
-            
+
             logger.info(f"✅ Test execution complete: {status_str}")
-            
+
+            # Update history record with final status
+            if execution_record:
+                final_status = ExecutionStatus.SUCCESS if success else ExecutionStatus.FAILURE
+                execution_record.total_steps = result_state.get("total_steps", 0)
+                execution_record.completed_steps = result_state.get("current_step", 0)
+                history_service.complete_execution(
+                    execution_id=execution_record.execution_id,
+                    status=final_status,
+                    errors=errors if errors else None
+                )
+                logger.info(f"📊 Updated history record: {execution_record.execution_id} -> {final_status.value}")
+
+            self.current_execution_id = None
+
             return {
                 "success": success,
                 "status": status_str,
                 "test_id": test_id,
+                "execution_id": execution_record.execution_id if execution_record else None,
                 "steps_completed": result_state.get("current_step", 0),
                 "total_steps": result_state.get("total_steps", 0),
                 "errors": errors
             }
-        
+
         except Exception as e:
             logger.error(f"❌ Test execution error: {e}")
             import traceback
             traceback.print_exc()
             self.execution_active = False
-            
+            self.execution_control.end_execution()
+
+            # Update history record with error status
+            if execution_record:
+                history_service.complete_execution(
+                    execution_id=execution_record.execution_id,
+                    status=ExecutionStatus.ERROR,
+                    errors=[str(e)]
+                )
+                logger.info(f"📊 Updated history record with error: {execution_record.execution_id}")
+
+            self.current_execution_id = None
+
             return {
                 "success": False,
                 "status": "error",
                 "error": str(e),
                 "test_id": test_id,
+                "execution_id": execution_record.execution_id if execution_record else None,
                 "steps_completed": 0,
                 "total_steps": 0,
                 "errors": [str(e)]
@@ -240,17 +293,20 @@ class AgentOrchestrator:
             }
         
         logger.info(f"▶️ Executing command: {command[:100]}")
-        
+
         try:
+            # Signal execution start to control
+            self.execution_control.start_execution()
+
             # Create initial state
             self.current_state = create_initial_state(
                 mode=AgentMode.STANDALONE,
                 standalone_command=command,
                 max_retries=max_retries
             )
-            
+
             self.execution_active = True
-            
+
             # Run graph with high recursion limit (100) to allow retries until success
             config = {"recursion_limit": 100}
             result_state = await asyncio.to_thread(
@@ -258,24 +314,26 @@ class AgentOrchestrator:
                 self.current_state,
                 config
             )
-            
+
             self.current_state = result_state
             self.execution_active = False
+            self.execution_control.end_execution()
             
             # Extract result safely
             status = result_state.get("status", AgentStatus.FAILURE)
-            
+
             # Handle status safely
             if isinstance(status, str):
                 status_str = status
-                success = status == "success"
+                # Check for both "success" and "passed" status strings
+                success = status.lower() in ("success", "passed")
             elif hasattr(status, 'value'):
                 status_str = status.value
                 success = status == AgentStatus.SUCCESS
             else:
                 status_str = str(status) if status else "unknown"
                 success = False
-            
+
             logger.info(f"✅ Command execution complete: {status_str}")
             
             return {
@@ -290,7 +348,8 @@ class AgentOrchestrator:
             import traceback
             traceback.print_exc()
             self.execution_active = False
-            
+            self.execution_control.end_execution()
+
             # Return proper error response
             return {
                 "success": False,
@@ -433,25 +492,34 @@ class AgentOrchestrator:
     def get_status(self) -> Dict[str, Any]:
         """
         Get current agent status.
-        
+
         Returns:
             Status information
         """
+        control_status = self.execution_control.get_status()
+
         if not self.current_state:
             return {
                 "status": "idle",
                 "mode": "idle",
-                "active": False
+                "active": False,
+                "paused": False
             }
-        
+
         # Safe extraction
         status = self.current_state.get("status", AgentStatus.IDLE)
         mode = self.current_state.get("current_mode", AgentMode.IDLE)
-        
+
+        # Override status if paused
+        status_str = status.value if hasattr(status, 'value') else str(status)
+        if control_status["paused"]:
+            status_str = "paused"
+
         return {
-            "status": status.value if hasattr(status, 'value') else str(status),
+            "status": status_str,
             "mode": mode.value if hasattr(mode, 'value') else str(mode),
             "active": self.execution_active,
+            "paused": control_status["paused"],
             "current_test_id": self.current_state.get("test_id"),
             "current_step": self.current_state.get("current_step", 0),
             "total_steps": self.current_state.get("total_steps", 0),
@@ -461,23 +529,65 @@ class AgentOrchestrator:
     
     def stop(self) -> Dict[str, Any]:
         """
-        Stop current execution.
-        
+        Stop current execution immediately.
+
+        Uses ExecutionControl to signal stop to running nodes.
+
         Returns:
             Confirmation
         """
         logger.info("🛑 Stopping execution")
-        
+
+        # Signal stop through execution control (thread-safe)
+        self.execution_control.stop_execution()
+
         if self.current_state:
             self.current_state = {
                 **self.current_state,
                 "stop_requested": True,
                 "should_continue": False
             }
-        
+
         self.execution_active = False
-        
+
         return {"success": True, "message": "Execution stopped"}
+
+    def pause(self) -> Dict[str, Any]:
+        """
+        Pause current execution.
+
+        Execution will wait at the next checkpoint until resumed.
+
+        Returns:
+            Confirmation
+        """
+        logger.info("⏸️ Pausing execution")
+
+        if not self.execution_active:
+            return {"success": False, "message": "No active execution to pause"}
+
+        success = self.execution_control.pause_execution()
+
+        if success:
+            return {"success": True, "message": "Execution paused"}
+        else:
+            return {"success": False, "message": "Cannot pause - execution not active or already stopped"}
+
+    def resume(self) -> Dict[str, Any]:
+        """
+        Resume paused execution.
+
+        Returns:
+            Confirmation
+        """
+        logger.info("▶️ Resuming execution")
+
+        if not self.execution_control.is_paused():
+            return {"success": False, "message": "Execution is not paused"}
+
+        self.execution_control.resume_execution()
+
+        return {"success": True, "message": "Execution resumed"}
     
     def reset(self) -> Dict[str, Any]:
         """

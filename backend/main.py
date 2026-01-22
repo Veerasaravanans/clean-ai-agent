@@ -22,7 +22,11 @@ from backend.routes import (
     stream_router,
     device_profile_router,
     verification_images_router,
-    model_routes_router
+    model_routes_router,
+    test_history_router,
+    reports_router,
+    rag_router,
+    excel_batch_router
 )
 
 # Configure logging
@@ -97,6 +101,10 @@ app.include_router(stream_router, prefix="/ws", tags=["WebSocket Streaming"])
 app.include_router(model_routes_router, tags=["Model Management"])
 app.include_router(device_profile_router, tags=["Device Profile"])
 app.include_router(verification_images_router, tags=["Verification Images"])
+app.include_router(test_history_router, tags=["Test History"])
+app.include_router(reports_router, tags=["Reports"])
+app.include_router(rag_router, tags=["RAG Management"])
+app.include_router(excel_batch_router, prefix="/api", tags=["Excel Batch"])
 
 
 # Health check endpoint (must be before static mount)

@@ -119,18 +119,28 @@ def is_test_complete(state: AgentState) -> Literal["complete", "continue"]:
 # Route 5: Route After Execution
 # ═══════════════════════════════════════════════════════════════
 
-def route_after_execution(state: AgentState) -> Literal["verify", "retry"]:
+def route_after_execution(state: AgentState) -> Literal["verify", "retry", "end"]:
     """
     Route after executing action.
-    
+
+    CRITICAL: Must check for stop conditions FIRST.
+
     Args:
         state: Current agent state
-        
+
     Returns:
-        "verify" | "retry"
+        "verify" | "retry" | "end"
     """
+    # CRITICAL: Check stop conditions FIRST
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
     action_success = state.get("action_success", False)
-    
+
     if action_success:
         logger.debug("→ Route: verify")
         return "verify"
@@ -143,19 +153,29 @@ def route_after_execution(state: AgentState) -> Literal["verify", "retry"]:
 # Route 6: Route After Verification
 # ═══════════════════════════════════════════════════════════════
 
-def route_after_verification(state: AgentState) -> Literal["success", "retry"]:
+def route_after_verification(state: AgentState) -> Literal["success", "retry", "end"]:
     """
     Route after verification.
-    
+
+    CRITICAL: Must check for stop conditions FIRST.
+
     Args:
         state: Current agent state
-        
+
     Returns:
-        "success" | "retry"
+        "success" | "retry" | "end"
     """
+    # CRITICAL: Check stop conditions FIRST
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
     verification_result = state.get("verification_result", {})
     verified = verification_result.get("verified", False)
-    
+
     if verified:
         logger.debug("→ Route: success")
         return "success"
@@ -193,30 +213,40 @@ def should_retry(state: AgentState) -> Literal["retry", "hitl"]:
 # Route 8: Route from Planning
 # ═══════════════════════════════════════════════════════════════
 
-def route_from_planning(state: AgentState) -> Literal["execute", "direct", "error"]:
+def route_from_planning(state: AgentState) -> Literal["execute", "direct", "error", "end"]:
     """
     Route from plan_action to appropriate execution.
-    
+
+    CRITICAL: Must check for stop conditions FIRST.
+
     Args:
         state: Current agent state
-        
+
     Returns:
-        "execute" | "direct" | "error"
+        "execute" | "direct" | "error" | "end"
     """
+    # CRITICAL: Check stop conditions FIRST
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
     action_type = state.get("action_type", "")
     target_coordinates = state.get("target_coordinates")
-    
+
     # Check for errors
     errors = state.get("errors", [])
     if errors and "No goal for action planning" in errors[-1]:
         logger.debug("→ Route: error")
         return "error"
-    
+
     # Direct actions (no coordinates needed)
     if action_type in ["press_back", "press_home", "press_enter"]:
         logger.debug("→ Route: direct")
         return "direct"
-    
+
     # Regular execution
     logger.debug("→ Route: execute")
     return "execute"
@@ -283,30 +313,30 @@ def route_hitl_ready(state: AgentState) -> Literal["guidance_received", "waiting
 def should_continue_workflow(state: AgentState) -> Literal["continue", "end"]:
     """
     Check if workflow should continue.
-    
+
     Args:
         state: Current agent state
-        
+
     Returns:
         "continue" | "end"
     """
     should_continue = state.get("should_continue", True)
     stop_requested = state.get("stop_requested", False)
     status = state.get("status", AgentStatus.RUNNING)
-    
+
     # End conditions
     if not should_continue:
         logger.debug("→ Route: end (should_continue=False)")
         return "end"
-    
+
     if stop_requested:
         logger.debug("→ Route: end (stop requested)")
         return "end"
-    
-    if status in [AgentStatus.SUCCESS, AgentStatus.FAILURE]:
+
+    if status in [AgentStatus.SUCCESS, AgentStatus.FAILURE, AgentStatus.STOPPED]:
         logger.debug(f"→ Route: end (status={status})")
         return "end"
-    
+
     logger.debug("→ Route: continue")
     return "continue"
 
@@ -369,20 +399,118 @@ def should_resume_from_hitl(state: AgentState) -> Literal["resume_hitl", "normal
     return "normal_flow"
 
 
+def route_after_direct_execute(state: AgentState) -> Literal["verify", "end"]:
+    """
+    Route after direct_execute - verify or end if stopped.
+
+    CRITICAL: Must check for stop conditions FIRST.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        "verify" | "end"
+    """
+    # CRITICAL: Check stop conditions FIRST
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
+    logger.debug("→ Route: verify")
+    return "verify"
+
+
+def route_after_capture(state: AgentState) -> Literal["analyze", "end"]:
+    """
+    Route after capture_screen - analyze or end if stopped.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        "analyze" | "end"
+    """
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
+    logger.debug("→ Route: analyze")
+    return "analyze"
+
+
+def route_after_analyze(state: AgentState) -> Literal["plan", "end"]:
+    """
+    Route after ai_analyze - plan or end if stopped.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        "plan" | "end"
+    """
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
+    logger.debug("→ Route: plan")
+    return "plan"
+
+
+def route_after_save_learned(state: AgentState) -> Literal["log", "end"]:
+    """
+    Route after save_learned - log or end if stopped.
+
+    Args:
+        state: Current agent state
+
+    Returns:
+        "log" | "end"
+    """
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+
+    if stop_requested or status == AgentStatus.STOPPED:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
+    logger.debug("→ Route: log")
+    return "log"
+
+
 def route_after_next_step(state: AgentState) -> str:
     """
     Route after next_step - check if we should continue with learned solution.
+
+    CRITICAL: Must check for stop/end conditions FIRST before routing.
     """
+    # CRITICAL: Check stop conditions FIRST
+    stop_requested = state.get("stop_requested", False)
+    status = state.get("status", AgentStatus.RUNNING)
+    should_continue = state.get("should_continue", True)
+
+    if stop_requested or status == AgentStatus.STOPPED or not should_continue:
+        logger.debug(f"→ Route: end (stop_requested={stop_requested}, status={status})")
+        return "end"
+
     # Check if test is complete
     current_step = state.get("current_step", 0)
     total_steps = state.get("total_steps", 1)
-    
+
     if current_step >= total_steps:
         return "save_learned"
-    
+
     # Check if we should use learned solution for next step
     if state.get("has_learned_solution") and state.get("use_learned", True):
         return "direct_execute"
-    
+
     # Normal AI flow
     return "capture_screen"

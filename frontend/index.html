@@ -5,34 +5,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Agent Framework - Android Automotive Testing</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for Analytics Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- HEADER -->
+    <!-- HEADER - Glassmorphism Design -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <header id="header">
         <div class="header-left">
-            <h1>🤖 AI Agent Framework</h1>
-            <span class="subtitle">Android Automotive UI Testing</span>
+            <div class="header-logo">
+                <img src="assets/logo.png" alt="Logo">
+            </div>
+            <div class="header-title">
+                <h1>AI Agent Framework</h1>
+                <span class="subtitle">Android Automotive UI Testing</span>
+            </div>
         </div>
-        
+
         <div class="header-center">
             <div class="status-indicator">
                 <div class="status-dot" id="agent-status-dot"></div>
                 <span id="agent-status-text">Idle</span>
             </div>
         </div>
-        
+
         <div class="header-right">
             <div class="connection-status">
-                <div class="status-item">
+                <div class="status-item" data-tooltip="Device connection status">
                     <span class="status-label">Device:</span>
                     <div class="status-dot" id="device-status-dot"></div>
                     <span id="device-status-text">Disconnected</span>
                 </div>
-                <div class="status-item">
+                <div class="status-item" data-tooltip="AI model status">
                     <span class="status-label">LLM:</span>
-                    <div class="status-dot" id="llm-status-dot"></div>
+                    <div class="status-dot connected" id="llm-status-dot"></div>
                     <span id="llm-status-text">VIO Cloud</span>
                 </div>
             </div>
@@ -43,57 +50,135 @@
     <!-- MAIN CONTAINER -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <div class="container">
-        
+
         <!-- ═══════════════════════════════════════════════════════════ -->
-        <!-- SIDEBAR -->
+        <!-- SIDEBAR - Collapsible Glassmorphism -->
         <!-- ═══════════════════════════════════════════════════════════ -->
         <aside id="sidebar">
-            
+            <!-- Sidebar Toggle Button -->
+            <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle Sidebar (Ctrl+B)">
+                <span id="sidebar-toggle-icon">☰</span>
+            </button>
+
+            <!-- ═══ TEST CONTROL Section ═══ -->
+            <div class="section-header-group">
+                <div class="section-header-title">Test Control</div>
+            </div>
+
             <!-- Test Execution Panel -->
-            <div class="panel">
+            <div class="panel" data-panel="test-execution">
                 <div class="panel-header">
-                    <h3>📋 Test Execution</h3>
+                    <h3><span class="panel-header-icon">📋</span> Test Execution</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
                         <label for="test-id-input">Test ID:</label>
                         <input type="text" id="test-id-input" placeholder="e.g., NAID-24430" />
                     </div>
-                    
+
                     <div class="form-group checkbox-group">
                         <label>
                             <input type="checkbox" id="use-learned-checkbox" checked />
                             Use Learned Solutions
                         </label>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="max-retries-input">Max Retries:</label>
                         <input type="number" id="max-retries-input" value="3" min="1" max="10" />
                     </div>
-                    
+
                     <div class="button-group">
                         <button id="run-test-btn" class="btn btn-primary">
-                            ▶️ Run Test
+                            ▶ Run Test
+                        </button>
+                        <button id="pause-test-btn" class="btn btn-warning" disabled>
+                            ⏸ Pause
+                        </button>
+                        <button id="resume-test-btn" class="btn btn-success" style="display: none;">
+                            ▶ Resume
                         </button>
                         <button id="stop-test-btn" class="btn btn-danger">
-                            ⏹️ Stop
+                            ⏹ Stop
                         </button>
                     </div>
-                    
+
                     <div class="progress-container" id="test-progress-container" style="display: none;">
                         <div class="progress-bar">
                             <div class="progress-fill" id="test-progress-fill"></div>
                         </div>
                         <div class="progress-text" id="test-progress-text">0/0 steps</div>
                     </div>
+
+                    <!-- Excel Batch Section -->
+                    <div class="excel-batch-section">
+                        <div class="section-divider">
+                            <span>Excel Batch Execution</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="excel-file-select">Excel Files:</label>
+                            <div class="excel-select-wrapper">
+                                <select id="excel-file-select" multiple size="4">
+                                    <!-- Populated by JavaScript -->
+                                </select>
+                                <div class="excel-select-controls">
+                                    <button id="excel-select-all-btn" class="btn btn-secondary btn-small" title="Select All">
+                                        All
+                                    </button>
+                                    <button id="excel-refresh-btn" class="btn btn-secondary btn-small" title="Refresh List">
+                                        Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <span class="form-hint">Hold Ctrl/Cmd to select multiple files</span>
+                        </div>
+
+                        <button id="load-excel-ids-btn" class="btn btn-secondary btn-block">
+                            Load Test IDs from Excel
+                        </button>
+
+                        <div id="excel-preview-container" class="excel-preview-container" style="display: none;">
+                            <div class="excel-preview-header">
+                                <span id="excel-preview-count">0 test IDs loaded</span>
+                                <div class="excel-preview-controls">
+                                    <button id="excel-select-all-ids-btn" class="btn btn-small btn-secondary" title="Select All">
+                                        All
+                                    </button>
+                                    <button id="excel-deselect-all-ids-btn" class="btn btn-small btn-secondary" title="Deselect All">
+                                        None
+                                    </button>
+                                    <button id="excel-clear-preview-btn" class="btn btn-small btn-danger" title="Clear">
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="excel-preview-list" class="excel-preview-list">
+                                <!-- Test IDs will be displayed here as checkboxes -->
+                            </div>
+                            <div class="excel-selection-info">
+                                <span id="excel-selected-count">0 selected</span>
+                            </div>
+                        </div>
+
+                        <div class="excel-run-buttons">
+                            <button id="run-excel-selected-btn" class="btn btn-secondary" disabled>
+                                ▶ Run Selected
+                            </button>
+                            <button id="run-excel-tests-btn" class="btn btn-primary" disabled>
+                                ▶▶ Run All
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
+
             <!-- Standalone Command Panel -->
-            <div class="panel">
+            <div class="panel" data-panel="standalone-command">
                 <div class="panel-header">
-                    <h3>💬 Standalone Command</h3>
+                    <h3><span class="panel-header-icon">💬</span> Standalone Command</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
                     <form id="standalone-form">
@@ -107,11 +192,17 @@
                     </form>
                 </div>
             </div>
-            
+
+            <!-- ═══ DEVICE Section ═══ -->
+            <div class="section-header-group">
+                <div class="section-header-title">Device</div>
+            </div>
+
             <!-- Device Control Panel -->
-            <div class="panel">
+            <div class="panel" data-panel="device-control">
                 <div class="panel-header">
-                    <h3>📱 Device Control</h3>
+                    <h3><span class="panel-header-icon">📱</span> Device Control</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
                     <div class="device-info" id="device-info">
@@ -128,52 +219,49 @@
                             <span id="device-resolution">-</span>
                         </div>
                     </div>
-                    
+
                     <div class="button-grid">
-                        <button id="press-back-btn" class="btn btn-secondary btn-icon" title="Press Back">
-                            ⬅️ Back
+                        <button id="press-back-btn" class="btn btn-secondary" title="Press Back">
+                            ⬅ Back
                         </button>
-                        <button id="press-home-btn" class="btn btn-secondary btn-icon" title="Press Home">
+                        <button id="press-home-btn" class="btn btn-secondary" title="Press Home">
                             🏠 Home
                         </button>
-                        <button id="screenshot-btn" class="btn btn-secondary btn-icon" title="Capture Screenshot">
+                        <button id="screenshot-btn" class="btn btn-secondary" title="Capture Screenshot">
                             📸 Capture
                         </button>
-                        <button id="refresh-device-btn" class="btn btn-secondary btn-icon" title="Refresh Device Info">
+                        <button id="refresh-device-btn" class="btn btn-secondary" title="Refresh Device Info">
                             🔄 Refresh
                         </button>
                     </div>
                 </div>
             </div>
-            
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- NEW: Device Coordinates Panel -->
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            <div class="panel">
+
+            <!-- Device Coordinates Panel -->
+            <div class="panel" data-panel="coordinates">
                 <div class="panel-header">
-                    <h3>📍 Device Coordinates</h3>
+                    <h3><span class="panel-header-icon">📍</span> Coordinates</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
                         <label for="coord-icon-name">Icon Name:</label>
                         <input type="text" id="coord-icon-name" placeholder="e.g., app_launcher" />
-                        <small style="display: block; margin-top: 4px; color: #888; font-size: 11px;">
-                            Common: app_launcher, home, back, hvac_temp_up
-                        </small>
+                        <span class="form-hint">Common: app_launcher, home, back, hvac_temp_up</span>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="coord-x">X Coordinate:</label>
+                            <label for="coord-x">X:</label>
                             <input type="number" id="coord-x" placeholder="406" />
                         </div>
                         <div class="form-group">
-                            <label for="coord-y">Y Coordinate:</label>
+                            <label for="coord-y">Y:</label>
                             <input type="number" id="coord-y" placeholder="1255" />
                         </div>
                     </div>
-                    
-                    <div class="button-group">
+
+                    <div class="button-group vertical">
                         <button id="add-coord-btn" class="btn btn-primary btn-block">
                             ➕ Add Coordinate
                         </button>
@@ -181,117 +269,96 @@
                             📋 View All
                         </button>
                         <button id="delete-coord-btn" class="btn btn-danger btn-block">
-                            🗑️ Delete
+                            🗑 Delete
                         </button>
                     </div>
-                    
+
                     <div id="coord-list-container" style="margin-top: 12px; max-height: 200px; overflow-y: auto; display: none;">
-                        <div style="font-size: 11px; color: #888; margin-bottom: 8px;">Stored Coordinates:</div>
+                        <div class="form-hint" style="margin-bottom: 8px;">Stored Coordinates:</div>
                         <div id="coord-list"></div>
                     </div>
                 </div>
             </div>
-            
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <!-- NEW: Verification Reference Images Panel -->
-            <!-- ═══════════════════════════════════════════════════════════════ -->
-            <div class="panel">
+
+            <!-- Verification Images Panel -->
+            <div class="panel" data-panel="verification-images">
                 <div class="panel-header">
-                    <h3>📸 Verification Images</h3>
+                    <h3><span class="panel-header-icon">📸</span> Verification Images</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
-                    <!-- Capture Section -->
                     <div class="verification-capture-section">
                         <div class="form-group">
                             <label for="verification-image-name">Reference Image Name:</label>
-                            <input 
-                                type="text" 
-                                id="verification-image-name" 
-                                placeholder="e.g., app_launcher_opened" 
-                            />
-                            <small style="display: block; margin-top: 4px; color: #888; font-size: 11px;">
-                                Name should describe expected state (e.g., "settings_opened", "bluetooth_page")
-                            </small>
+                            <input type="text" id="verification-image-name" placeholder="e.g., app_launcher_opened" />
+                            <span class="form-hint">Describe expected state (e.g., "settings_opened")</span>
                         </div>
-                        
+
                         <div class="form-group">
                             <label for="verification-image-description">Description (Optional):</label>
-                            <textarea 
-                                id="verification-image-description" 
-                                rows="2" 
-                                placeholder="Brief description of this state..."
-                            ></textarea>
+                            <textarea id="verification-image-description" rows="2" placeholder="Brief description..."></textarea>
                         </div>
-                        
-                        <!-- Capture Button -->
-                        <button 
-                            id="capture-verification-btn" 
-                            class="btn btn-primary btn-block"
-                            title="Capture current screen as verification reference"
-                        >
+
+                        <button id="capture-verification-btn" class="btn btn-primary btn-block" title="Capture current screen">
                             📸 Capture Verification Image
                         </button>
                     </div>
-                    
-                    <!-- View Images Section -->
+
                     <div class="verification-view-section" style="margin-top: 16px;">
-                        <button 
-                            id="view-verification-images-btn" 
-                            class="btn btn-secondary btn-block"
-                            title="View all captured verification images"
-                        >
+                        <button id="view-verification-images-btn" class="btn btn-secondary btn-block">
                             📋 View Captured Images
                         </button>
-                        
-                        <!-- Images List Container (hidden by default) -->
-                        <div 
-                            id="verification-images-list-container" 
-                            style="margin-top: 12px; max-height: 250px; overflow-y: auto; display: none;"
-                        >
-                            <div style="font-size: 11px; color: #888; margin-bottom: 8px;">
-                                Captured Verification Images:
-                            </div>
+
+                        <div id="verification-images-list-container" style="margin-top: 12px; max-height: 250px; overflow-y: auto; display: none;">
+                            <div class="form-hint" style="margin-bottom: 8px;">Captured Verification Images:</div>
                             <div id="verification-images-list"></div>
                         </div>
+
+                        <!-- SSIM Verification Results Section -->
+                        <div class="verification-ssim-section" style="margin-top: 16px;">
+                            <div class="form-hint" style="margin-bottom: 8px;">SSIM Verification Results:</div>
+                            <div class="ssim-buttons-group">
+                                <button id="view-ssim-success-btn" class="btn btn-secondary btn-sm">
+                                    View Success
+                                </button>
+                                <button id="view-ssim-failed-btn" class="btn btn-secondary btn-sm">
+                                    View Failed
+                                </button>
+                                <button id="view-ssim-comparisons-btn" class="btn btn-secondary btn-sm">
+                                    View Comparisons
+                                </button>
+                            </div>
+
+                            <div id="ssim-results-container" style="margin-top: 12px; max-height: 300px; overflow-y: auto; display: none;">
+                                <div id="ssim-results-list"></div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <!-- Device Info Display -->
-                    <div 
-                        id="verification-device-info" 
-                        style="margin-top: 12px; padding: 8px; background: #1a1a2e; border-radius: 4px; font-size: 11px; color: #888;"
-                    >
-                        <strong>Device:</strong> <span id="verification-device-id">Not connected</span>
-                    </div>
-                    
-                    <!-- Info Note -->
-                    <div style="margin-top: 10px; padding: 8px; background: #2a2a3e; border-left: 3px solid #4a9eff; font-size: 10px; color: #9a9ab0;">
-                        <strong>ℹ️ How it works:</strong>
-                        <ul style="margin: 5px 0; padding-left: 20px;">
-                            <li>Capture reference images for each expected state</li>
-                            <li>Images are stored per device (like coordinates)</li>
-                            <li>Tests verify against these reference images using SSIM</li>
-                            <li>Click image name to preview for 3 seconds</li>
-                        </ul>
+
+                    <div id="verification-device-info" style="margin-top: 12px;" class="device-info">
+                        <div class="info-item">
+                            <span class="info-label">Device:</span>
+                            <span id="verification-device-id">Not connected</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- ═══════════════════════════════════════════════════════════ -->
-            <!-- NEW: VIO Model Selection Panel -->
-            <!-- VIO Model Selection Panel -->
-            <!-- ═══════════════════════════════════════════════════════════ -->
 
-            <div class="panel">
+            <!-- ═══ AI & MODEL Section ═══ -->
+            <div class="section-header-group">
+                <div class="section-header-title">AI & Model</div>
+            </div>
+
+            <!-- VIO Model Selection Panel -->
+            <div class="panel" data-panel="vio-model">
                 <div class="panel-header">
-                    <h3>🤖 VIO Model Selection</h3>
+                    <h3><span class="panel-header-icon">🤖</span> VIO Model Selection</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
-                    <!-- Model Dropdown -->
                     <div class="form-group">
                         <label for="vioModelSelect">Select VIO Model:</label>
-                        <select id="vioModelSelect" onchange="updateVIOModelInfo(this.value)" style="width: 100%; padding: 8px; background: #1a1a2e; border: 1px solid #3a3a4e; border-radius: 5px; color: #fff; font-size: 13px;">
-                            
-                            <!-- Vision & Image Models -->
+                        <select id="vioModelSelect" onchange="updateVIOModelInfo(this.value)">
                             <optgroup label="🖼️ Vision & Image">
                                 <option value="pixtral-large">Pixtral Large (Image understanding)</option>
                                 <option value="gpt-5">GPT-5 (Image understanding)</option>
@@ -300,14 +367,10 @@
                                 <option value="claude-3.7-sonnet">Claude 3.7 Sonnet</option>
                                 <option value="claude-3.5-sonnet">Claude 3.5 Sonnet</option>
                             </optgroup>
-                            
-                            <!-- Reasoning Models -->
                             <optgroup label="🧠 Reasoning">
                                 <option value="deepseek-r1">DeepSeek R1</option>
                                 <option value="phi-4-reasoning">Phi-4-reasoning</option>
                             </optgroup>
-                            
-                            <!-- Fast Models -->
                             <optgroup label="⚡ Fast Models">
                                 <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
                                 <option value="grok-4-fast-non-reasoning">Grok-4-fast-non-reasoning</option>
@@ -317,8 +380,6 @@
                                 <option value="nova-lite">Nova Lite</option>
                                 <option value="nova-micro">Nova Micro</option>
                             </optgroup>
-                            
-                            <!-- GPT Family -->
                             <optgroup label="💬 GPT Family">
                                 <option value="gpt-5-chat">GPT 5-chat</option>
                                 <option value="gpt-5-high">GPT-5-high</option>
@@ -330,99 +391,85 @@
                                 <option value="gpt-oss-120b">GPT-OSS-120B</option>
                                 <option value="gpt-oss-20b">GPT-OSS-20B</option>
                             </optgroup>
-                            
-                            <!-- LLaMA Family -->
                             <optgroup label="🦙 LLaMA Family">
                                 <option value="llama-3.1-8b">LLaMA 3.1 8B</option>
                                 <option value="llama3-405b">Llama3 405B</option>
                                 <option value="meta-llama-3.3-70b">Meta LLaMA 3.3 70B</option>
                             </optgroup>
-                            
-                            <!-- Mistral Family -->
                             <optgroup label="🌪️ Mistral Family">
                                 <option value="mistral-large-2">Mistral Large 2</option>
                                 <option value="mistral-large-2402">Mistral Large 2402</option>
                             </optgroup>
-                            
-                            <!-- Nova Family -->
                             <optgroup label="✨ Nova Family">
                                 <option value="nova-premier">Nova Premier</option>
                                 <option value="nova-pro-v1">Nova Pro v1</option>
                             </optgroup>
-                            
-                            <!-- Qwen Family -->
                             <optgroup label="🇨🇳 Qwen Family">
                                 <option value="qwen-3.5-235b">Qwen 3.5 235B</option>
                                 <option value="qwen3-coder-480b-a35b-v1">Qwen3-coder (Coding)</option>
                             </optgroup>
-                            
-                            <!-- Other Models -->
                             <optgroup label="🔬 Other">
                                 <option value="mai-ds-r1">MAI-DS-R1</option>
                                 <option value="grok-3">Grok-3</option>
                             </optgroup>
                         </select>
                     </div>
-                    
-                    <!-- Quick Scenario Selection -->
+
                     <div class="form-group">
                         <label>Quick Select Scenario:</label>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px;">
-                            <button onclick="selectVIOScenario('vision')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
-                                🖼️ Vision
+                        <div class="button-grid" style="margin-top: 8px;">
+                            <button onclick="selectVIOScenario('vision')" class="btn btn-secondary btn-small">
+                                🖼 Vision
                             </button>
-                            <button onclick="selectVIOScenario('agentic')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
+                            <button onclick="selectVIOScenario('agentic')" class="btn btn-secondary btn-small">
                                 🤖 Agentic
                             </button>
-                            <button onclick="selectVIOScenario('fast')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
+                            <button onclick="selectVIOScenario('fast')" class="btn btn-secondary btn-small">
                                 ⚡ Fast
                             </button>
-                            <button onclick="selectVIOScenario('balanced')" class="btn btn-secondary" style="padding: 6px; font-size: 12px;">
-                                ⚖️ Balanced
-                            </button>
-                            <button onclick="selectVIOScenario('reasoning')" class="btn btn-secondary" style="padding: 6px; font-size: 12px; grid-column: 1 / -1;">
+                            <button onclick="selectVIOScenario('reasoning')" class="btn btn-secondary btn-small">
                                 🧠 Reasoning
                             </button>
                         </div>
                     </div>
-                    
-                    <!-- Apply Button -->
+
                     <button id="applyVIOModelBtn" onclick="applyVIOModelChange()" class="btn btn-primary btn-block" style="margin-top: 12px;">
                         Apply Model Change
                     </button>
-                    
-                    <!-- Current Model Info -->
-                    <div id="vioModelInfo" style="margin-top: 12px; padding: 10px; background: #1a1a2e; border-radius: 5px; font-size: 11px; color: #a0a0b0;">
-                        <div><strong>Current:</strong> <span id="currentVIOModel">Gemini 2.5 Pro</span></div>
-                        <div style="margin-top: 5px;"><strong>Category:</strong> <span id="vioModelCategory">agentic</span></div>
-                        <div style="margin-top: 5px;"><strong>Speed:</strong> <span id="vioModelSpeed">⚡⚡</span></div>
-                        <div style="margin-top: 5px;"><strong>Quality:</strong> <span id="vioModelQuality">⭐⭐⭐⭐⭐</span></div>
-                        <div style="margin-top: 5px;"><strong>Use:</strong> <span id="vioModelDesc">Agentic AI usage</span></div>
-                    </div>
-                    
-                    <!-- Note about special models -->
-                    <div style="margin-top: 10px; padding: 8px; background: #2a2a3e; border-left: 3px solid #4a9eff; font-size: 10px; color: #9a9ab0;">
-                        <strong>📝 Note:</strong>
-                        <ul style="margin: 5px 0; padding-left: 20px;">
-                            <li><strong>Pixtral Large, GPT-5:</strong> Best for image understanding</li>
-                            <li><strong>Gemini 2.5 Pro:</strong> Best for agentic AI usage</li>
-                            <li><strong>DeepSeek R1:</strong> Best for deep reasoning tasks</li>
-                        </ul>
+
+                    <div id="vioModelInfo" class="device-info" style="margin-top: 12px;">
+                        <div class="info-item">
+                            <span class="info-label">Current:</span>
+                            <span id="currentVIOModel">Gemini 2.5 Pro</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Category:</span>
+                            <span id="vioModelCategory">agentic</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Speed:</span>
+                            <span id="vioModelSpeed">⚡⚡</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Quality:</span>
+                            <span id="vioModelQuality">⭐⭐⭐⭐⭐</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <!-- HITL Panel -->
-            <div class="panel">
+
+            <!-- Human Guidance Panel -->
+            <div class="panel" data-panel="human-guidance">
                 <div class="panel-header">
-                    <h3>👤 Human Guidance</h3>
+                    <h3><span class="panel-header-icon">👤</span> Human Guidance</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
                     <div class="form-group">
                         <label for="guidance-input">Guidance Text:</label>
                         <textarea id="guidance-input" rows="2" placeholder="e.g., Tap the Settings icon"></textarea>
                     </div>
-                    
+
                     <div class="form-row">
                         <div class="form-group">
                             <label for="coord-x-input">X:</label>
@@ -433,7 +480,7 @@
                             <input type="number" id="coord-y-input" placeholder="450" />
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label for="action-type-select">Action Type:</label>
                         <select id="action-type-select">
@@ -443,36 +490,42 @@
                             <option value="verify">Verify</option>
                         </select>
                     </div>
-                    
+
                     <button id="send-guidance-btn" class="btn btn-primary btn-block">
                         📤 Send Guidance
                     </button>
                 </div>
             </div>
-            
+
+            <!-- ═══ DATA Section ═══ -->
+            <div class="section-header-group">
+                <div class="section-header-title">Data</div>
+            </div>
+
             <!-- RAG Management Panel -->
-            <div class="panel">
+            <div class="panel" data-panel="rag-management">
                 <div class="panel-header">
-                    <h3>🧠 RAG Management</h3>
+                    <h3><span class="panel-header-icon">🧠</span> RAG Management</h3>
+                    <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
                     <button id="index-tests-btn" class="btn btn-secondary btn-block">
                         📥 Index Test Cases
                     </button>
-                    
-                    <div class="form-group">
+
+                    <div class="form-group" style="margin-top: 12px;">
                         <label for="search-tests-input">Search Tests:</label>
                         <input type="text" id="search-tests-input" placeholder="Search by keywords..." />
                     </div>
                     <button id="search-tests-btn" class="btn btn-secondary btn-block">
                         🔍 Search
                     </button>
-                    
-                    <button id="view-learned-btn" class="btn btn-secondary btn-block">
+
+                    <button id="view-learned-btn" class="btn btn-secondary btn-block" style="margin-top: 8px;">
                         💡 View Learned Solutions
                     </button>
-                    
-                    <div class="rag-stats" id="rag-stats">
+
+                    <div class="rag-stats" id="rag-stats" style="margin-top: 12px;">
                         <div class="stat-item">
                             <span class="stat-label">Test Cases:</span>
                             <span id="rag-test-count">0</span>
@@ -484,14 +537,112 @@
                     </div>
                 </div>
             </div>
-            
+
+            <!-- Test History Panel -->
+            <div class="panel" data-panel="test-history">
+                <div class="panel-header">
+                    <h3><span class="panel-header-icon">📊</span> Test History</h3>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <div class="history-quick-stats">
+                        <div class="quick-stat">
+                            <span class="quick-stat-value" id="history-total">0</span>
+                            <span class="quick-stat-label">Total</span>
+                        </div>
+                        <div class="quick-stat quick-stat-success">
+                            <span class="quick-stat-value" id="history-passed">0</span>
+                            <span class="quick-stat-label">Passed</span>
+                        </div>
+                        <div class="quick-stat quick-stat-error">
+                            <span class="quick-stat-value" id="history-failed">0</span>
+                            <span class="quick-stat-label">Failed</span>
+                        </div>
+                    </div>
+
+                    <div class="history-pass-rate">
+                        <div class="pass-rate-bar">
+                            <div class="pass-rate-fill" id="history-pass-rate-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="pass-rate-text" id="history-pass-rate-text">0%</span>
+                    </div>
+
+                    <button id="open-history-dashboard-btn" class="btn btn-primary btn-block">
+                        📈 Open Dashboard
+                    </button>
+                    <button id="refresh-history-btn" class="btn btn-secondary btn-block">
+                        🔄 Refresh
+                    </button>
+                </div>
+            </div>
+
+            <!-- Reports Panel -->
+            <div class="panel" data-panel="reports">
+                <div class="panel-header">
+                    <h3><span class="panel-header-icon">📄</span> Reports</h3>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label>Report Format:</label>
+                        <div class="report-format-selector">
+                            <button id="report-format-excel" class="format-btn format-btn-active" data-format="excel">
+                                📊 Excel
+                            </button>
+                            <button id="report-format-pdf" class="format-btn" data-format="pdf">
+                                📑 PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="report-include-ssim" checked />
+                            Include SSIM Details
+                        </label>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="report-include-charts" checked />
+                            Include Charts
+                        </label>
+                    </div>
+                    <div class="form-group checkbox-group">
+                        <label>
+                            <input type="checkbox" id="report-include-screenshots" />
+                            Include Screenshots
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Date Range (Optional):</label>
+                        <div class="date-range-inputs">
+                            <input type="date" id="report-date-from" />
+                            <span>to</span>
+                            <input type="date" id="report-date-to" />
+                        </div>
+                    </div>
+
+                    <button id="generate-report-btn" class="btn btn-primary btn-block">
+                        🔄 Generate Report
+                    </button>
+                    <button id="view-reports-btn" class="btn btn-secondary btn-block">
+                        📋 View Reports
+                    </button>
+
+                    <div class="reports-count" id="reports-count-container" style="display: none;">
+                        <span id="reports-count">0</span> reports available
+                    </div>
+                </div>
+            </div>
+
         </aside>
-        
+
         <!-- ═══════════════════════════════════════════════════════════ -->
         <!-- MAIN CONTENT -->
         <!-- ═══════════════════════════════════════════════════════════ -->
         <main id="main-content">
-            
+
             <!-- Status Cards -->
             <div class="status-cards">
                 <div class="status-card">
@@ -501,7 +652,7 @@
                         <div class="card-value" id="card-device-status">Disconnected</div>
                     </div>
                 </div>
-                
+
                 <div class="status-card">
                     <div class="card-icon">⚙️</div>
                     <div class="card-content">
@@ -509,7 +660,7 @@
                         <div class="card-value" id="card-agent-status">Idle</div>
                     </div>
                 </div>
-                
+
                 <div class="status-card">
                     <div class="card-icon">📊</div>
                     <div class="card-content">
@@ -517,7 +668,7 @@
                         <div class="card-value" id="card-tests-executed">0</div>
                     </div>
                 </div>
-                
+
                 <div class="status-card">
                     <div class="card-icon">✅</div>
                     <div class="card-content">
@@ -526,28 +677,30 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Screen Stream Section -->
             <div class="screen-section">
                 <div class="section-header">
                     <h2>📺 Screen Stream</h2>
                     <div class="section-controls">
                         <span class="coordinate-display" id="coordinate-display">x: 0, y: 0</span>
-                        <button id="toggle-stream-btn" class="btn btn-small">🔴 Stream Off</button>
+                        <button id="toggle-stream-btn" class="btn btn-small btn-secondary">🔴 Stream Off</button>
+                        <button id="fullscreen-btn" class="btn btn-small btn-secondary btn-fullscreen" title="Fullscreen">⛶</button>
                     </div>
                 </div>
-                
+
                 <div class="canvas-container">
                     <canvas id="screen-canvas" width="720" height="1280"></canvas>
                     <div class="canvas-overlay" id="canvas-overlay">
                         <div class="overlay-message">
-                            📱 No device screen available<br>
-                            <small style="font-size: 12px; opacity: 0.7;">Connect a device to see live stream</small>
+                            <div class="overlay-icon">📱</div>
+                            <div class="overlay-text">No device screen available</div>
+                            <div class="overlay-hint">Connect a device to see live stream</div>
                         </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Execution Log Section -->
             <div class="log-section">
                 <div class="section-header">
@@ -558,18 +711,18 @@
                             <option value="execution-only">⚡ Execution Only</option>
                             <option value="ai-only">🤖 AI Reasoning</option>
                             <option value="user-actions">👆 User Actions</option>
-                            <option value="errors-warnings">⚠️ Errors &amp; Warnings</option>
+                            <option value="errors-warnings">⚠️ Errors & Warnings</option>
                             <option value="info">Info</option>
                             <option value="success">Success</option>
                             <option value="warning">Warning</option>
                             <option value="error">Error</option>
                             <option value="hitl">HITL</option>
                         </select>
-                        <button id="clear-logs-btn" class="btn btn-small">🗑️ Clear</button>
-                        <button id="export-logs-btn" class="btn btn-small">💾 Export</button>
+                        <button id="clear-logs-btn" class="btn btn-small btn-secondary" title="Clear logs (Ctrl+L)">🗑 Clear</button>
+                        <button id="export-logs-btn" class="btn btn-small btn-secondary">💾 Export</button>
                     </div>
                 </div>
-                
+
                 <div class="log-container" id="execution-log">
                     <div class="log-entry log-info" data-category="system">
                         <span class="log-time">00:00:00</span>
@@ -578,15 +731,15 @@
                     </div>
                 </div>
             </div>
-            
+
         </main>
-        
+
     </div>
-    
+
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- MODALS -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    
+
     <!-- Settings Modal -->
     <div class="modal" id="settings-modal">
         <div class="modal-content">
@@ -599,19 +752,19 @@
                     <label for="api-url-input">API URL:</label>
                     <input type="text" id="api-url-input" value="http://localhost:8000" />
                 </div>
-                
+
                 <div class="form-group">
                     <label for="stream-fps-input">Stream FPS:</label>
                     <input type="number" id="stream-fps-input" value="2" min="1" max="5" />
                 </div>
-                
+
                 <div class="form-group checkbox-group">
                     <label>
                         <input type="checkbox" id="auto-scroll-logs-checkbox" checked />
                         Auto-scroll Logs
                     </label>
                 </div>
-                
+
                 <div class="form-group checkbox-group">
                     <label>
                         <input type="checkbox" id="show-coordinates-checkbox" checked />
@@ -625,71 +778,354 @@
             </div>
         </div>
     </div>
-    
-    <!-- About Modal -->
+
+    <!-- About Modal - Complete Redesign -->
     <div class="modal" id="about-modal">
-        <div class="modal-content">
+        <div class="modal-content modal-content-large">
             <div class="modal-header">
                 <h2>ℹ️ About</h2>
                 <button class="modal-close" data-modal="about-modal">&times;</button>
             </div>
             <div class="modal-body">
-                <h3>AI Agent Framework</h3>
-                <p>Version: 1.0.0</p>
-                <p>Android Automotive UI Testing with VIO Cloud Platform</p>
-                
-                <h4>Features:</h4>
-                <ul>
-                    <li>Automated test execution with LangGraph</li>
-                    <li>AI-powered vision and OCR</li>
-                    <li>Real-time screen streaming</li>
-                    <li>Human-in-the-loop intervention</li>
-                    <li>RAG-based learned solutions</li>
-                    <li>Device coordinate management</li>
-                    <li>Multi-model AI support (40+ models)</li>
-                </ul>
-                
-                <h4>Tech Stack:</h4>
-                <ul>
-                    <li>Backend: FastAPI + LangGraph</li>
-                    <li>LLM: VIO Cloud Platform</li>
-                    <li>Database: ChromaDB (Vector Storage)</li>
-                    <li>Frontend: Vanilla JavaScript</li>
-                </ul>
+                <!-- Hero Section -->
+                <div class="about-hero">
+                    <div class="header-logo">
+                        <img src="assets/logo.png" alt="Logo">
+                    </div>
+                    <h1 class="about-title">AI Agent Framework</h1>
+                    <p class="about-subtitle">Android Automotive UI Testing Platform</p>
+                    <span class="about-version">v2.0.0</span>
+                    <p class="about-creator">Created by <strong>VEERA SARAVANAN</strong></p>
+                </div>
+
+                <!-- Feature Sections -->
+                <div class="about-features">
+                    <!-- Core Testing Features -->
+                    <div class="feature-section">
+                        <div class="feature-section-header">
+                            <span class="feature-section-icon">🎯</span>
+                            <span class="feature-section-title">Core Testing Features</span>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-item">Automated test execution with LangGraph state machine</div>
+                            <div class="feature-item">AI-powered natural language command processing</div>
+                            <div class="feature-item">Real-time screen streaming with coordinate tracking</div>
+                            <div class="feature-item">Human-in-the-Loop (HITL) intervention support</div>
+                            <div class="feature-item">Test progress tracking and visualization</div>
+                        </div>
+                    </div>
+
+                    <!-- Vision & Verification -->
+                    <div class="feature-section">
+                        <div class="feature-section-header">
+                            <span class="feature-section-icon">👁️</span>
+                            <span class="feature-section-title">Vision & Verification</span>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-item">SSIM-based image verification with reference images</div>
+                            <div class="feature-item">Multi-strategy OCR verification (15 preprocessing presets)</div>
+                            <div class="feature-item">AI Vision verification (Claude, GPT, Gemini)</div>
+                            <div class="feature-item">Side-by-side comparison image generation</div>
+                            <div class="feature-item">Verification results history tracking</div>
+                            <div class="feature-item">Reference image capture and management</div>
+                        </div>
+                    </div>
+
+                    <!-- Device Management -->
+                    <div class="feature-section">
+                        <div class="feature-section-header">
+                            <span class="feature-section-icon">📱</span>
+                            <span class="feature-section-title">Device Management</span>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-item">ADB device control (tap, swipe, text input, key events)</div>
+                            <div class="feature-item">Device coordinate storage per resolution</div>
+                            <div class="feature-item">Resolution-specific reference image storage</div>
+                            <div class="feature-item">Multi-device support</div>
+                            <div class="feature-item">Real-time device status monitoring</div>
+                        </div>
+                    </div>
+
+                    <!-- AI & Intelligence -->
+                    <div class="feature-section">
+                        <div class="feature-section-header">
+                            <span class="feature-section-icon">🧠</span>
+                            <span class="feature-section-title">AI & Intelligence</span>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-item">40+ AI models supported via VIO Cloud Platform</div>
+                            <div class="feature-item">RAG-based learned solutions database</div>
+                            <div class="feature-item">Adaptive learning from human guidance</div>
+                            <div class="feature-item">Model switching for different scenarios (Vision, Agentic, Fast, Reasoning)</div>
+                            <div class="feature-item">ChromaDB vector storage integration</div>
+                        </div>
+                    </div>
+
+                    <!-- Reporting & Analytics -->
+                    <div class="feature-section">
+                        <div class="feature-section-header">
+                            <span class="feature-section-icon">📊</span>
+                            <span class="feature-section-title">Reporting & Analytics</span>
+                        </div>
+                        <div class="feature-list">
+                            <div class="feature-item">Test history dashboard with interactive charts</div>
+                            <div class="feature-item">Excel report generation with formatting</div>
+                            <div class="feature-item">PDF report generation</div>
+                            <div class="feature-item">Pass rate analytics and trends</div>
+                            <div class="feature-item">SSIM score tracking and visualization</div>
+                            <div class="feature-item">Date range filtering</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tech Stack -->
+                <div class="tech-stack">
+                    <div class="tech-item">
+                        <span class="tech-item-icon">🐍</span>
+                        <span class="tech-item-label">Backend:</span>
+                        <span class="tech-item-value">FastAPI + LangGraph</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-item-icon">🤖</span>
+                        <span class="tech-item-label">AI Platform:</span>
+                        <span class="tech-item-value">VIO Cloud (40+ models)</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-item-icon">🗄️</span>
+                        <span class="tech-item-label">Database:</span>
+                        <span class="tech-item-value">ChromaDB (Vector)</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-item-icon">🌐</span>
+                        <span class="tech-item-label">Frontend:</span>
+                        <span class="tech-item-value">JavaScript + CSS3</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-item-icon">📱</span>
+                        <span class="tech-item-label">Device:</span>
+                        <span class="tech-item-value">Android ADB</span>
+                    </div>
+                    <div class="tech-item">
+                        <span class="tech-item-icon">📄</span>
+                        <span class="tech-item-label">Reports:</span>
+                        <span class="tech-item-value">ReportLab + openpyxl</span>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="about-footer">
+                    <p class="about-copyright">© 2025-2026 Elektrobit. All rights reserved.</p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-primary" data-modal="about-modal">Close</button>
             </div>
         </div>
     </div>
-    
+
+    <!-- Test History Dashboard Modal -->
+    <div class="modal modal-fullscreen" id="history-dashboard-modal">
+        <div class="modal-content modal-content-fullscreen">
+            <div class="modal-header">
+                <h2>📊 Test History Dashboard</h2>
+                <button class="modal-close" data-modal="history-dashboard-modal">&times;</button>
+            </div>
+            <div class="modal-body dashboard-body">
+                <!-- Summary Cards Row -->
+                <div class="dashboard-summary-cards">
+                    <div class="summary-card">
+                        <div class="summary-card-icon">📋</div>
+                        <div class="summary-card-content">
+                            <div class="summary-card-value" id="dash-total-executions">0</div>
+                            <div class="summary-card-label">Total Executions</div>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-success">
+                        <div class="summary-card-icon">✅</div>
+                        <div class="summary-card-content">
+                            <div class="summary-card-value" id="dash-total-passed">0</div>
+                            <div class="summary-card-label">Passed</div>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-error">
+                        <div class="summary-card-icon">❌</div>
+                        <div class="summary-card-content">
+                            <div class="summary-card-value" id="dash-total-failed">0</div>
+                            <div class="summary-card-label">Failed</div>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-rate">
+                        <div class="summary-card-icon">📈</div>
+                        <div class="summary-card-content">
+                            <div class="summary-card-value" id="dash-pass-rate">0%</div>
+                            <div class="summary-card-label">Pass Rate</div>
+                        </div>
+                    </div>
+                    <div class="summary-card summary-card-ssim">
+                        <div class="summary-card-icon">🔍</div>
+                        <div class="summary-card-content">
+                            <div class="summary-card-value" id="dash-ssim-rate">0%</div>
+                            <div class="summary-card-label">SSIM Pass Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="dashboard-charts-row">
+                    <div class="chart-container">
+                        <h3>Execution Trend (Last 30 Days)</h3>
+                        <canvas id="trend-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Pass/Fail Distribution</h3>
+                        <canvas id="distribution-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Executions Table -->
+                <div class="dashboard-table-section">
+                    <div class="table-header">
+                        <h3>Execution History</h3>
+                        <div class="table-controls">
+                            <select id="dash-status-filter">
+                                <option value="">All Status</option>
+                                <option value="success">Success</option>
+                                <option value="failure">Failure</option>
+                                <option value="error">Error</option>
+                            </select>
+                            <input type="text" id="dash-test-filter" placeholder="Filter by Test ID..." />
+                            <button id="dash-refresh-btn" class="btn btn-small btn-secondary">🔄 Refresh</button>
+                        </div>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="dashboard-table" id="executions-table">
+                            <thead>
+                                <tr>
+                                    <th>Test ID</th>
+                                    <th>Status</th>
+                                    <th>Started</th>
+                                    <th>Duration</th>
+                                    <th>Steps</th>
+                                    <th>Pass Rate</th>
+                                    <th>SSIM</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="executions-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Pagination -->
+                    <div class="table-pagination">
+                        <button id="dash-prev-page" class="btn btn-small btn-secondary" disabled>← Previous</button>
+                        <span id="dash-page-info">Page 1 of 1</span>
+                        <button id="dash-next-page" class="btn btn-small btn-secondary" disabled>Next →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Execution Detail Modal -->
+    <div class="modal" id="execution-detail-modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2>📋 Execution Details</h2>
+                <button class="modal-close" data-modal="execution-detail-modal">&times;</button>
+            </div>
+            <div class="modal-body" id="execution-detail-content">
+                <!-- Populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-danger" id="delete-execution-btn">🗑 Delete</button>
+                <button class="btn btn-secondary" data-modal="execution-detail-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports List Modal -->
+    <div class="modal" id="reports-list-modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2>📄 Generated Reports</h2>
+                <button class="modal-close" data-modal="reports-list-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="reports-list" id="reports-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="reports-list-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SSIM Comparison Modal -->
+    <div class="modal" id="ssim-comparison-modal">
+        <div class="modal-content modal-content-large">
+            <div class="modal-header">
+                <h2>🔍 SSIM Verification Result</h2>
+                <button class="modal-close" data-modal="ssim-comparison-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="ssim-result-header" id="ssim-result-header">
+                    <!-- Test ID, Step, Score, Status -->
+                </div>
+                <div class="ssim-comparison-images">
+                    <div class="comparison-image-container" id="comparison-image-container">
+                        <img id="ssim-comparison-image" src="" alt="Comparison" />
+                    </div>
+                </div>
+                <div class="ssim-result-details" id="ssim-result-details">
+                    <!-- Additional details -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-modal="ssim-comparison-modal">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Container -->
     <div id="notification-container"></div>
-    
-    <!-- Footer -->
+
+    <!-- Footer - Glassmorphism -->
     <footer id="footer">
         <div class="footer-content">
-            <span>AI Agent Framework v1.0.0</span>
-            <span class="separator">|</span>
+            <span class="footer-version">v2.0.0</span>
+            <span class="separator">•</span>
             <button class="footer-link" id="open-settings-btn">Settings</button>
-            <span class="separator">|</span>
+            <span class="separator">•</span>
             <button class="footer-link" id="open-about-btn">About</button>
-            <span class="separator">|</span>
+            <span class="separator">•</span>
             <span id="connection-time">Connected: 0s</span>
         </div>
     </footer>
-    
-    <!-- Scripts -->
-    <script src="app.js"></script>
 
-    <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- Image Preview Modal (Add before closing </body> tag) -->
-    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- Image Preview Modal -->
     <div id="verification-image-preview-modal" class="verification-preview-modal" style="display: none;">
         <div class="verification-preview-container">
             <img id="verification-preview-image" src="" alt="Verification Image" />
             <div class="verification-preview-name" id="verification-preview-name"></div>
         </div>
     </div>
+
+    <!-- RAG Results Modal -->
+    <div id="rag-results-modal" class="rag-modal" style="display: none;">
+        <div class="rag-modal-content">
+            <div class="rag-modal-header">
+                <h3 id="rag-modal-title">Results</h3>
+                <button class="rag-modal-close" onclick="closeRAGModal()">&times;</button>
+            </div>
+            <div class="rag-modal-body" id="rag-modal-body">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
 </body>
 </html>

@@ -160,24 +160,74 @@ async def run_tests(request: RunTestRequest):
 @router.post("/stop", response_model=StopResponse)
 async def stop_execution():
     """
-    Stop current test execution.
-    
+    Stop current test execution immediately.
+
     Returns:
         StopResponse with confirmation
     """
     logger.info("🛑 Stop execution request")
-    
+
     try:
         orchestrator = get_orchestrator()
         result = orchestrator.stop()
-        
+
         return StopResponse(
             success=result["success"],
             message=result["message"]
         )
-    
+
     except Exception as e:
         logger.error(f"❌ Stop error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/pause", response_model=BaseResponse)
+async def pause_execution():
+    """
+    Pause current test execution.
+
+    Execution will wait at the next checkpoint until resumed.
+
+    Returns:
+        BaseResponse with confirmation
+    """
+    logger.info("⏸️ Pause execution request")
+
+    try:
+        orchestrator = get_orchestrator()
+        result = orchestrator.pause()
+
+        return BaseResponse(
+            success=result["success"],
+            message=result["message"]
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Pause error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/resume", response_model=BaseResponse)
+async def resume_execution():
+    """
+    Resume paused test execution.
+
+    Returns:
+        BaseResponse with confirmation
+    """
+    logger.info("▶️ Resume execution request")
+
+    try:
+        orchestrator = get_orchestrator()
+        result = orchestrator.resume()
+
+        return BaseResponse(
+            success=result["success"],
+            message=result["message"]
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Resume error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
