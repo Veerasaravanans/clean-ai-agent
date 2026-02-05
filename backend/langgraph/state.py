@@ -37,6 +37,12 @@ class AgentState(TypedDict, total=False):
     has_learned_solution: bool  # Whether learned solution exists
     learned_solution: Optional[Dict[str, Any]]  # Learned solution data
     use_learned: bool  # Whether to use learned solution
+
+    # ═══════════════════════════════════════════════════════════
+    # Dynamic Verification System
+    # ═══════════════════════════════════════════════════════════
+    step_verification_configs: List[Dict[str, Any]]  # Per-step verification configs from Excel
+    current_step_verification_config: Optional[Dict[str, Any]]  # Current step's verification config
     
     # ═══════════════════════════════════════════════════════════
     # Screen Analysis
@@ -132,6 +138,10 @@ def create_initial_state(
         has_learned_solution=False,
         learned_solution=None,
         use_learned=use_learned,
+
+        # Dynamic Verification System
+        step_verification_configs=[],
+        current_step_verification_config=None,
         
         # Screen Analysis
         current_screenshot=None,

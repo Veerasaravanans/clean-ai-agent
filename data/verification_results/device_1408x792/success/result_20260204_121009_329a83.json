@@ -1,0 +1,15 @@
+{
+  "result_id": "result_20260204_121009_329a83",
+  "device_id": "device_1408x792",
+  "test_id": "NAID-NEW-003",
+  "step_number": 1,
+  "step_description": "Step 1: Open app launcher from the home screen (Expected: App launcher drawer should open showing all available applications)",
+  "ssim_score": 0.9819923849757324,
+  "passed": true,
+  "threshold": 0.85,
+  "category": "success",
+  "timestamp": "2026-02-04T12:10:09.612730",
+  "reference_image": "data\\verification_images\\device_1408x792\\app_launcher_opened.png",
+  "actual_image": "data\\screenshots\\screenshot_20260204_121002.jpg",
+  "comparison_image": "data\\verification_results\\device_1408x792\\success\\result_20260204_121009_329a83_comparison.png"
+}

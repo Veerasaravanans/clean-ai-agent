@@ -16,35 +16,49 @@ logger = logging.getLogger(__name__)
 
 class ADBTool:
     """Enhanced ADB command wrapper with automotive OS integration."""
-    
+
+    # Class-level flag to log initialization only once per session
+    _initialization_logged = False
+    _detected_screen_size = None
+
     def __init__(self, device_serial: Optional[str] = None):
         """Initialize ADB tool with enhanced features."""
         self.device_serial = device_serial or settings.adb_device_serial
         self.timeout = settings.adb_timeout
         self.retry_count = settings.adb_retry_count
         self.stop_requested = False
-        
-        # Screen dimensions - detect immediately
-        self.screen_width = 0
-        self.screen_height = 0
-        self._detect_screen_size()
-        
+
+        # Screen dimensions - use cached value if available
+        if ADBTool._detected_screen_size:
+            self.screen_width, self.screen_height = ADBTool._detected_screen_size
+        else:
+            self.screen_width = 0
+            self.screen_height = 0
+            self._detect_screen_size()
+
+            # Cache the detected size
+            if self.screen_width > 0:
+                ADBTool._detected_screen_size = (self.screen_width, self.screen_height)
+
         # Ensure we have valid dimensions
         if self.screen_width == 0:
             self.screen_width = 1080
             self.screen_height = 1920
-        
-        logger.info(f"ADB Tool initialized - {self.screen_width}x{self.screen_height}")
+
+        # Log initialization only once per session
+        if not ADBTool._initialization_logged:
+            logger.info(f"ADB Tool initialized - {self.screen_width}x{self.screen_height}")
+            ADBTool._initialization_logged = True
     
     def _detect_screen_size(self):
         """Detect actual screen size and update instance variables."""
         if self.stop_requested:
             return
-        
+
         try:
             cmd = self._build_adb_command(['shell', 'wm', 'size'])
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
-            
+
             if result.returncode == 0:
                 # Check for both Physical size and Override size
                 for line in result.stdout.split('\n'):
@@ -53,10 +67,11 @@ class ADBTool:
                         w, h = size_str.split('x')
                         self.screen_width = int(w)
                         self.screen_height = int(h)
-                        logger.info(f"Detected screen: {self.screen_width}x{self.screen_height}")
+                        # Use debug level to avoid log spam
+                        logger.debug(f"Detected screen: {self.screen_width}x{self.screen_height}")
                         return
         except Exception as e:
-            logger.warning(f"Screen detection failed: {e}")
+            logger.debug(f"Screen detection failed: {e}")
     
     def _build_adb_command(self, args: List[str]) -> List[str]:
         """Build ADB command with optional device serial."""

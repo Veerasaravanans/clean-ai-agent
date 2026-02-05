@@ -296,42 +296,48 @@ class VerificationImageService:
     def _clean_image_name(self, name: str) -> str:
         """
         Clean image name (remove special characters, ensure .png extension).
-        
+
         Args:
             name: Original name
-            
+
         Returns:
             Cleaned name with .png extension
         """
+        # Strip .png extension first if present (to avoid converting . to _)
+        if name.lower().endswith('.png'):
+            name = name[:-4]
+
         # Remove special characters, keep alphanumeric and underscores
         clean = "".join(c if c.isalnum() or c in ('_', '-') else '_' for c in name)
-        
+
         # Convert to lowercase
         clean = clean.lower()
-        
+
         # Remove consecutive underscores
         while '__' in clean:
             clean = clean.replace('__', '_')
-        
-        # Ensure .png extension
-        if not clean.endswith('.png'):
-            clean += '.png'
-        
+
+        # Strip leading/trailing underscores
+        clean = clean.strip('_')
+
+        # Add .png extension back
+        clean += '.png'
+
         return clean
     
     def suggest_image_name(self, step_description: str) -> str:
         """
         Suggest image name based on step description.
-        
+
         Args:
             step_description: Test step description
-            
+
         Returns:
             Suggested image name
         """
         # Extract key words
         desc_lower = step_description.lower()
-        
+
         # Common patterns
         if 'open' in desc_lower or 'launch' in desc_lower:
             if 'app launcher' in desc_lower:
@@ -340,11 +346,272 @@ class VerificationImageService:
                 return "settings_opened"
             elif 'bluetooth' in desc_lower:
                 return "bluetooth_opened"
-        
+
         # Default: use first few words
         words = desc_lower.split()[:3]
         suggested = "_".join(words)
         return self._clean_image_name(suggested)
+
+    # ═══════════════════════════════════════════════════════════
+    # Cropped Verification Images (for Partial Image Verification)
+    # ═══════════════════════════════════════════════════════════
+
+    def save_cropped_verification_image(
+        self,
+        screenshot_path: str,
+        image_name: str,
+        device_id: str,
+        crop_coords: Dict[str, int],
+        description: Optional[str] = None
+    ) -> bool:
+        """
+        Save cropped verification reference image with coordinates metadata.
+
+        Args:
+            screenshot_path: Path to cropped screenshot
+            image_name: Name for the reference image (e.g., "navigation_bar")
+            device_id: Device identifier
+            crop_coords: Dict with x1, y1, x2, y2 coordinates
+            description: Optional description
+
+        Returns:
+            Success boolean
+        """
+        try:
+            # Get device folder
+            device_folder = self.get_device_folder(device_id)
+
+            # Clean image name and add _cropped suffix
+            base_name = self._clean_image_name(image_name)
+            if not base_name.replace('.png', '').endswith('_cropped'):
+                clean_name = base_name.replace('.png', '_cropped.png')
+            else:
+                clean_name = base_name
+
+            # Destination path
+            dest_path = device_folder / clean_name
+
+            # Copy image
+            shutil.copy2(screenshot_path, dest_path)
+
+            # Update metadata with crop coordinates
+            if device_id not in self.metadata:
+                self.metadata[device_id] = {}
+
+            self.metadata[device_id][clean_name] = {
+                "original_name": image_name,
+                "clean_name": clean_name,
+                "type": "cropped",  # Mark as cropped image
+                "crop_coords": crop_coords,
+                "description": description or "",
+                "created_at": datetime.now().isoformat(),
+                "source_path": screenshot_path
+            }
+
+            self._save_metadata()
+
+            logger.info(f"✅ Saved cropped verification image: {device_id}/{clean_name}")
+            logger.info(f"   Crop coordinates: ({crop_coords['x1']},{crop_coords['y1']}) to ({crop_coords['x2']},{crop_coords['y2']})")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save cropped verification image: {e}")
+            return False
+
+    def get_cropped_verification_image(
+        self,
+        image_name: str,
+        device_id: str
+    ) -> Optional[Path]:
+        """
+        Get cropped verification reference image path.
+
+        Args:
+            image_name: Name of reference image (with or without _cropped suffix)
+            device_id: Device identifier
+
+        Returns:
+            Path to image or None if not found
+        """
+        try:
+            device_folder = self.get_device_folder(device_id)
+
+            # Clean the image name
+            clean_name = self._clean_image_name(image_name)
+            base_name = clean_name.replace('.png', '')
+
+            # Build list of possible file names to try
+            possible_names = [
+                clean_name,  # Exact clean name (e.g., settings_croped_cropped.png)
+            ]
+
+            # Try with/without _cropped suffix
+            if base_name.endswith('_cropped'):
+                # Already has _cropped, also try without
+                possible_names.append(base_name[:-8] + '.png')
+            else:
+                # Doesn't have _cropped, add it
+                possible_names.append(base_name + '_cropped.png')
+
+            # Check each possible name
+            for name in possible_names:
+                image_path = device_folder / name
+                if image_path.exists():
+                    logger.info(f"✅ Found cropped verification image: {device_id}/{name}")
+                    return image_path
+
+            logger.warning(f"⚠️ Cropped verification image not found: {device_id}/{clean_name}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to get cropped verification image: {e}")
+            return None
+
+    def list_cropped_images(self, device_id: str) -> List[Dict]:
+        """
+        List all cropped verification images for a device.
+
+        Args:
+            device_id: Device identifier
+
+        Returns:
+            List of cropped image metadata dictionaries
+        """
+        try:
+            if device_id not in self.metadata:
+                return []
+
+            cropped_images = []
+            for clean_name, meta in self.metadata[device_id].items():
+                # Filter for cropped images only
+                if meta.get("type") == "cropped":
+                    image_path = self.get_device_folder(device_id) / clean_name
+                    if image_path.exists():
+                        cropped_images.append({
+                            "name": meta["original_name"],
+                            "clean_name": clean_name,
+                            "type": "cropped",
+                            "crop_coords": meta.get("crop_coords", {}),
+                            "description": meta.get("description", ""),
+                            "created_at": meta.get("created_at", ""),
+                            "path": str(image_path)
+                        })
+
+            logger.info(f"📋 Found {len(cropped_images)} cropped verification images for {device_id}")
+            return cropped_images
+
+        except Exception as e:
+            logger.error(f"Failed to list cropped verification images: {e}")
+            return []
+
+    def delete_cropped_image(
+        self,
+        image_name: str,
+        device_id: str
+    ) -> bool:
+        """
+        Delete cropped verification reference image.
+
+        Args:
+            image_name: Name of cropped image to delete (can be display name or clean name)
+            device_id: Device identifier
+
+        Returns:
+            Success boolean
+        """
+        try:
+            device_folder = self.get_device_folder(device_id)
+
+            if device_id not in self.metadata:
+                logger.warning(f"Device {device_id} not found in metadata")
+                return False
+
+            # Try to find the metadata entry by various name formats
+            clean_name = self._clean_image_name(image_name)
+            metadata_key = None
+
+            # Build list of possible names to check
+            possible_names = [
+                clean_name,  # Direct clean name (e.g., settings_croped_cropped.png)
+                image_name,  # Original input name
+            ]
+
+            # Also try with/without _cropped suffix
+            base_clean = clean_name.replace('.png', '')
+            if base_clean.endswith('_cropped'):
+                # If it ends with _cropped, try without it
+                possible_names.append(base_clean[:-8] + '.png')
+            else:
+                # If it doesn't end with _cropped, try with it
+                possible_names.append(base_clean + '_cropped.png')
+
+            # Find the actual metadata key
+            for name_to_check in possible_names:
+                if name_to_check in self.metadata[device_id]:
+                    metadata_key = name_to_check
+                    break
+
+            if not metadata_key:
+                logger.warning(f"Metadata not found for: {image_name} (tried: {possible_names})")
+                # Still try to delete the file if it exists
+                for name in possible_names:
+                    image_path = device_folder / name
+                    if image_path.exists():
+                        image_path.unlink()
+                        logger.info(f"🗑️ Deleted file (no metadata): {device_id}/{name}")
+                        return True
+                return False
+
+            # Delete the file
+            image_path = device_folder / metadata_key
+            if image_path.exists():
+                image_path.unlink()
+                logger.info(f"🗑️ Deleted file: {image_path}")
+
+            # Delete metadata entry
+            del self.metadata[device_id][metadata_key]
+            self._save_metadata()
+
+            logger.info(f"🗑️ Deleted cropped verification image: {device_id}/{metadata_key}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to delete cropped verification image: {e}")
+            import traceback
+            logger.debug(traceback.format_exc())
+            return False
+
+    def get_image_metadata(self, image_name: str, device_id: str) -> Optional[Dict]:
+        """
+        Get metadata for a verification image (full or cropped).
+
+        Args:
+            image_name: Image name
+            device_id: Device identifier
+
+        Returns:
+            Metadata dict or None
+        """
+        try:
+            if device_id not in self.metadata:
+                return None
+
+            clean_name = self._clean_image_name(image_name)
+
+            # Check for exact match
+            if clean_name in self.metadata[device_id]:
+                return self.metadata[device_id][clean_name]
+
+            # Check with _cropped suffix
+            cropped_name = clean_name.replace('.png', '_cropped.png')
+            if cropped_name in self.metadata[device_id]:
+                return self.metadata[device_id][cropped_name]
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to get image metadata: {e}")
+            return None
 
     # ═══════════════════════════════════════════════════════════
     # Verification Results Management

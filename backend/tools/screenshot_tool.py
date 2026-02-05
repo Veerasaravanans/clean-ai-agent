@@ -384,9 +384,142 @@ class ScreenshotTool:
                 key=lambda p: p.stat().st_mtime,
                 reverse=True
             )
-            
+
             for screenshot in screenshots[keep_last:]:
                 screenshot.unlink()
-                
+
         except Exception as e:
             logger.error(f"Cleanup error: {e}")
+
+    # ═══════════════════════════════════════════════════════════
+    # CROPPING METHODS (for Partial Image Verification)
+    # ═══════════════════════════════════════════════════════════
+
+    def capture_cropped(
+        self,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
+        filename: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Capture screenshot and crop to specified region in one operation.
+
+        Args:
+            x1: Left edge coordinate
+            y1: Top edge coordinate
+            x2: Right edge coordinate
+            y2: Bottom edge coordinate
+            filename: Optional output filename
+
+        Returns:
+            Path to cropped image or None
+        """
+        # First capture full screenshot
+        full_screenshot = self.capture()
+        if not full_screenshot:
+            logger.error("Failed to capture screenshot for cropping")
+            return None
+
+        # Then crop it
+        return self.crop_existing(full_screenshot, x1, y1, x2, y2, filename)
+
+    def crop_existing(
+        self,
+        screenshot_path: str,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int,
+        output_filename: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Crop an existing screenshot to specified region.
+
+        Args:
+            screenshot_path: Path to existing screenshot
+            x1: Left edge coordinate
+            y1: Top edge coordinate
+            x2: Right edge coordinate
+            y2: Bottom edge coordinate
+            output_filename: Optional output filename
+
+        Returns:
+            Path to cropped image or None
+        """
+        try:
+            # Validate coordinates
+            if x2 <= x1 or y2 <= y1:
+                logger.error(f"Invalid crop coordinates: ({x1},{y1}) to ({x2},{y2})")
+                return None
+
+            # Load image
+            img = Image.open(screenshot_path)
+            width, height = img.size
+
+            # Clamp coordinates to image bounds
+            x1 = max(0, min(x1, width - 1))
+            y1 = max(0, min(y1, height - 1))
+            x2 = max(x1 + 1, min(x2, width))
+            y2 = max(y1 + 1, min(y2, height))
+
+            # Crop image (PIL uses left, upper, right, lower)
+            cropped = img.crop((x1, y1, x2, y2))
+
+            # Generate output filename if not provided
+            if not output_filename:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                output_filename = f"cropped_{timestamp}_{x1}_{y1}_{x2}_{y2}.jpg"
+
+            output_path = self.screenshot_dir / output_filename
+
+            # Save cropped image
+            cropped.save(output_path, 'JPEG', quality=self.quality)
+
+            logger.info(f"✅ Cropped image saved: {output_path} ({cropped.width}x{cropped.height})")
+            return str(output_path)
+
+        except Exception as e:
+            logger.error(f"Crop error: {e}")
+            return None
+
+    def get_crop_preview(
+        self,
+        screenshot_path: str,
+        x1: int,
+        y1: int,
+        x2: int,
+        y2: int
+    ) -> Optional[bytes]:
+        """
+        Get a preview of a crop region as bytes (for API response).
+
+        Args:
+            screenshot_path: Path to screenshot
+            x1, y1, x2, y2: Crop coordinates
+
+        Returns:
+            JPEG bytes of cropped region or None
+        """
+        try:
+            img = Image.open(screenshot_path)
+            width, height = img.size
+
+            # Clamp coordinates
+            x1 = max(0, min(x1, width - 1))
+            y1 = max(0, min(y1, height - 1))
+            x2 = max(x1 + 1, min(x2, width))
+            y2 = max(y1 + 1, min(y2, height))
+
+            cropped = img.crop((x1, y1, x2, y2))
+
+            # Convert to bytes
+            buffer = io.BytesIO()
+            cropped.save(buffer, 'JPEG', quality=self.quality)
+
+            return buffer.getvalue()
+
+        except Exception as e:
+            logger.error(f"Crop preview error: {e}")
+            return None

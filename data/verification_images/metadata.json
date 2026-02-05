@@ -7,13 +7,6 @@
       "created_at": "2026-01-15T17:05:15.994718",
       "source_path": "data\\screenshots\\verification_temp_home_opened.jpg"
     },
-    "app_launcher_opened.png": {
-      "original_name": "app_launcher_opened",
-      "clean_name": "app_launcher_opened.png",
-      "description": "",
-      "created_at": "2026-01-15T17:11:21.549089",
-      "source_path": "data\\screenshots\\verification_temp_app_launcher_opened.jpg"
-    },
     "notifications_opened.png": {
       "original_name": "notifications_opened",
       "clean_name": "notifications_opened.png",
@@ -34,6 +27,55 @@
       "description": "",
       "created_at": "2026-01-22T11:01:14.308383",
       "source_path": "data\\screenshots\\verification_temp_bluetooth_opened.jpg"
+    },
+    "settings_cropped.png": {
+      "original_name": "settings",
+      "clean_name": "settings_cropped.png",
+      "type": "cropped",
+      "crop_coords": {
+        "x1": 0,
+        "y1": 80,
+        "x2": 550,
+        "y2": 664
+      },
+      "description": "",
+      "created_at": "2026-01-27T12:59:53.235378",
+      "source_path": "data\\screenshots\\cropped_temp_settings.jpg"
+    },
+    "top_cropped.png": {
+      "original_name": "top",
+      "clean_name": "top_cropped.png",
+      "type": "cropped",
+      "crop_coords": {
+        "x1": 0,
+        "y1": 0,
+        "x2": 1408,
+        "y2": 80
+      },
+      "description": "",
+      "created_at": "2026-01-27T13:01:07.945875",
+      "source_path": "data\\screenshots\\cropped_temp_top.jpg"
+    },
+    "bluetooth_cropped.png": {
+      "original_name": "bluetooth",
+      "clean_name": "bluetooth_cropped.png",
+      "type": "cropped",
+      "crop_coords": {
+        "x1": 550,
+        "y1": 80,
+        "x2": 1408,
+        "y2": 420
+      },
+      "description": "",
+      "created_at": "2026-01-27T13:02:36.755851",
+      "source_path": "data\\screenshots\\cropped_temp_bluetooth.jpg"
+    },
+    "app_launcher_opened.png": {
+      "original_name": "app_launcher_opened",
+      "clean_name": "app_launcher_opened.png",
+      "description": "",
+      "created_at": "2026-02-05T10:58:11.809202",
+      "source_path": "data\\screenshots\\verification_temp_app_launcher_opened.jpg"
     }
   }
 }

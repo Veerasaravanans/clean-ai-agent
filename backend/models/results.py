@@ -198,7 +198,7 @@ class StepExecutionResult(BaseModel):
     duration: float = Field(default=0.0, description="Step duration")
     error: Optional[str] = Field(default=None, description="Error message if failed")
     screenshot: Optional[str] = Field(default=None, description="Screenshot path")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -210,3 +210,204 @@ class StepExecutionResult(BaseModel):
                 "screenshot": "step1.png"
             }
         }
+
+
+# ═══════════════════════════════════════════════════════════
+# Dynamic Verification System Data Classes
+# ═══════════════════════════════════════════════════════════
+
+from backend.models.enums import VerificationType
+
+
+@dataclass
+class CropRegion:
+    """
+    Defines a rectangular region for partial image verification.
+    Coordinates are in device pixels.
+    """
+    name: str  # Region identifier (e.g., "navigation_bar")
+    x1: int    # Left edge
+    y1: int    # Top edge
+    x2: int    # Right edge
+    y2: int    # Bottom edge
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "x1": self.x1,
+            "y1": self.y1,
+            "x2": self.x2,
+            "y2": self.y2
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "CropRegion":
+        return cls(
+            name=data.get("name", "region"),
+            x1=data.get("x1", 0),
+            y1=data.get("y1", 0),
+            x2=data.get("x2", 0),
+            y2=data.get("y2", 0)
+        )
+
+    @classmethod
+    def from_string(cls, name: str, coords_str: str) -> "CropRegion":
+        """
+        Parse crop region from string format: "x1,y1,x2,y2"
+
+        Args:
+            name: Region name
+            coords_str: Coordinates as "x1,y1,x2,y2"
+
+        Returns:
+            CropRegion instance
+        """
+        try:
+            parts = [int(p.strip()) for p in coords_str.split(",")]
+            if len(parts) == 4:
+                return cls(name=name, x1=parts[0], y1=parts[1], x2=parts[2], y2=parts[3])
+        except (ValueError, IndexError):
+            pass
+        # Return default region on parse error
+        return cls(name=name, x1=0, y1=0, x2=0, y2=0)
+
+    def is_valid(self) -> bool:
+        """Check if region coordinates are valid."""
+        return self.x2 > self.x1 and self.y2 > self.y1
+
+    @property
+    def width(self) -> int:
+        return self.x2 - self.x1
+
+    @property
+    def height(self) -> int:
+        return self.y2 - self.y1
+
+
+@dataclass
+class StepVerificationConfig:
+    """
+    Verification configuration for a single test step.
+    Parsed from Excel "Verification Type" and "What Needs to Be Verified" columns.
+    """
+    verification_type: VerificationType = VerificationType.IMAGE
+
+    # For OCR verification: list of texts that must ALL be present
+    expected_texts: List[str] = field(default_factory=list)
+
+    # For partial image verification: list of crop regions
+    crop_regions: List[CropRegion] = field(default_factory=list)
+
+    # For full/partial image: reference image name override (optional)
+    reference_image_name: Optional[str] = None
+
+    # SSIM threshold override (optional)
+    ssim_threshold: Optional[float] = None
+
+    def to_dict(self) -> dict:
+        return {
+            "verification_type": self.verification_type.value,
+            "expected_texts": self.expected_texts,
+            "crop_regions": [r.to_dict() for r in self.crop_regions],
+            "reference_image_name": self.reference_image_name,
+            "ssim_threshold": self.ssim_threshold
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "StepVerificationConfig":
+        return cls(
+            verification_type=VerificationType(data.get("verification_type", "image_verification")),
+            expected_texts=data.get("expected_texts", []),
+            crop_regions=[CropRegion.from_dict(r) for r in data.get("crop_regions", [])],
+            reference_image_name=data.get("reference_image_name"),
+            ssim_threshold=data.get("ssim_threshold")
+        )
+
+    @classmethod
+    def default(cls) -> "StepVerificationConfig":
+        """Return default config (full image verification)."""
+        return cls(verification_type=VerificationType.IMAGE)
+
+
+@dataclass
+class OCRVerificationResult:
+    """
+    Result of OCR-based text verification.
+    """
+    passed: bool
+    expected_texts: List[str]
+    found_texts: List[str]
+    missing_texts: List[str]
+    all_detected_text: str  # Full OCR output for debugging
+    confidence: float = 0.0
+
+    def to_dict(self) -> dict:
+        return {
+            "passed": self.passed,
+            "expected_texts": self.expected_texts,
+            "found_texts": self.found_texts,
+            "missing_texts": self.missing_texts,
+            "all_detected_text": self.all_detected_text[:500],  # Truncate for storage
+            "confidence": self.confidence
+        }
+
+
+@dataclass
+class PartialImageVerificationResult:
+    """
+    Result of partial (cropped) image verification.
+    """
+    passed: bool
+    regions_results: List[Dict[str, Any]]  # Per-region results
+    overall_ssim: float
+    failed_regions: List[str]  # Names of regions that failed
+    comparison_image: Optional[str] = None  # Path to comparison image
+
+    def to_dict(self) -> dict:
+        return {
+            "passed": self.passed,
+            "regions_results": self.regions_results,
+            "overall_ssim": self.overall_ssim,
+            "failed_regions": self.failed_regions,
+            "comparison_image": self.comparison_image
+        }
+
+
+@dataclass
+class DynamicVerificationResult:
+    """
+    Unified result from dynamic verification system.
+    Contains results regardless of verification type used.
+    """
+    passed: bool
+    verification_type: VerificationType
+    message: str
+
+    # Type-specific details (only one will be populated)
+    ssim_result: Optional[Dict[str, Any]] = None
+    ocr_result: Optional[OCRVerificationResult] = None
+    partial_result: Optional[PartialImageVerificationResult] = None
+
+    # Common metadata
+    screenshot_path: Optional[str] = None
+    comparison_image_path: Optional[str] = None
+    result_id: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        result = {
+            "passed": self.passed,
+            "verification_type": self.verification_type.value,
+            "message": self.message,
+            "screenshot_path": self.screenshot_path,
+            "comparison_image_path": self.comparison_image_path,
+            "result_id": self.result_id
+        }
+
+        if self.ssim_result:
+            result["ssim_result"] = self.ssim_result
+        if self.ocr_result:
+            result["ocr_result"] = self.ocr_result.to_dict()
+        if self.partial_result:
+            result["partial_result"] = self.partial_result.to_dict()
+
+        return result

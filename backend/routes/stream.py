@@ -20,21 +20,69 @@ log_queue = deque(maxlen=1000)  # Keep last 1000 logs
 
 class WebSocketLogHandler(logging.Handler):
     """Custom log handler that captures logs for WebSocket streaming."""
-    
+
+    # Messages to filter out (spam/noise) - these are initialization/internal messages
+    FILTERED_PATTERNS = [
+        'Detected screen:',
+        'ADB Tool initialized',
+        'Screen detection failed',
+        'wm size',
+        'Screenshot Tool initialized',
+        'Device Coordinate Tool initialized',
+        'Verification Tool initialized',
+        'Vision Tool initialized',
+        'Agent Toolkit initialized',
+        'Initializing Agent Toolkit',
+        'Texted Icon Detection Tool initialized',
+        'NonTextedIconDetectionTool initialized',
+        'EasyOCR initialized',
+        'PaddleOCR initialized',
+        'RAG system initialized',
+        'RAG already initialized',
+        'Initializing RAG system',
+    ]
+
+    # Track recent messages to deduplicate
+    _recent_messages = {}
+    _dedup_window_seconds = 5  # Don't repeat same message within 5 seconds
+
     def emit(self, record):
         try:
+            message = self.format(record)
+
+            # Filter out noisy/spammy messages
+            for pattern in self.FILTERED_PATTERNS:
+                if pattern in message:
+                    return  # Skip this message
+
+            # Deduplicate repeated messages
+            msg_key = f"{record.name}:{message}"
+            current_time = datetime.now().timestamp()
+            if msg_key in self._recent_messages:
+                last_time = self._recent_messages[msg_key]
+                if current_time - last_time < self._dedup_window_seconds:
+                    return  # Skip duplicate within time window
+            self._recent_messages[msg_key] = current_time
+
+            # Clean old entries from dedup cache (keep last 100)
+            if len(self._recent_messages) > 100:
+                sorted_keys = sorted(self._recent_messages.keys(),
+                                   key=lambda k: self._recent_messages[k])
+                for old_key in sorted_keys[:50]:
+                    del self._recent_messages[old_key]
+
             # Format log entry
             log_entry = {
                 "type": "log",
                 "level": record.levelname.lower(),
-                "message": self.format(record),
+                "message": message,
                 "timestamp": datetime.now().isoformat(),
                 "logger": record.name
             }
-            
+
             # Add to queue (WebSocket clients will poll from queue)
             log_queue.append(log_entry)
-            
+
         except Exception:
             # Avoid recursion in error handling
             pass
@@ -151,14 +199,15 @@ async def websocket_status_stream(websocket: WebSocket):
     
     try:
         from backend.services import get_orchestrator
-        
+
         while True:
             # Get real status from orchestrator
             try:
                 orchestrator = get_orchestrator()
                 status = orchestrator.get_status()
-                
-                # Send status update
+                statistics = orchestrator.get_statistics()
+
+                # Send status update including statistics
                 await websocket.send_json({
                     "type": "status",
                     "status": status.get("status", "idle"),
@@ -166,7 +215,10 @@ async def websocket_status_stream(websocket: WebSocket):
                     "current_step": status.get("current_step", 0),
                     "total_steps": status.get("total_steps", 0),
                     "progress_percentage": status.get("progress_percentage", 0),
-                    "waiting_for_hitl": status.get("waiting_for_hitl", False)
+                    "waiting_for_hitl": status.get("waiting_for_hitl", False),
+                    "tests_executed": statistics.get("tests_executed", 0),
+                    "tests_passed": statistics.get("tests_passed", 0),
+                    "tests_failed": statistics.get("tests_failed", 0)
                 })
             except Exception:
                 # Fallback to idle status
@@ -176,9 +228,12 @@ async def websocket_status_stream(websocket: WebSocket):
                     "mode": "idle",
                     "current_step": 0,
                     "total_steps": 0,
-                    "progress_percentage": 0
+                    "progress_percentage": 0,
+                    "tests_executed": 0,
+                    "tests_passed": 0,
+                    "tests_failed": 0
                 })
-            
+
             await asyncio.sleep(2)
     
     except WebSocketDisconnect:

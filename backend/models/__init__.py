@@ -12,7 +12,8 @@ from backend.models.enums import (
     TestResult,
     VerificationEngineStatus,
     LogLevel,
-    OCREngine
+    OCREngine,
+    VerificationType
 )
 from backend.models.learned_solution import LearnedSolution, LearnedStep, LearnedSolutionStats
 from backend.models.results import (
@@ -24,7 +25,13 @@ from backend.models.results import (
     LogEntry,
     DeviceInfo,
     TestExecutionResult,
-    StepExecutionResult
+    StepExecutionResult,
+    # Dynamic Verification System
+    CropRegion,
+    StepVerificationConfig,
+    OCRVerificationResult,
+    PartialImageVerificationResult,
+    DynamicVerificationResult
 )
 from backend.models.schemas import (
     # Requests
@@ -93,19 +100,20 @@ from backend.models.reports import (
 __all__ = [
     # Enums
     "AgentMode",
-    "AgentStatus", 
+    "AgentStatus",
     "ActionType",
     "VerificationStatus",
     "TestResult",
     "VerificationEngineStatus",
     "LogLevel",
     "OCREngine",
-    
+    "VerificationType",
+
     # Learned Solutions
     "LearnedSolution",
     "LearnedStep",
     "LearnedSolutionStats",
-    
+
     # Results (Dataclasses & Pydantic)
     "Coordinates",
     "ActionResult",
@@ -116,6 +124,13 @@ __all__ = [
     "DeviceInfo",
     "TestExecutionResult",
     "StepExecutionResult",
+
+    # Dynamic Verification System
+    "CropRegion",
+    "StepVerificationConfig",
+    "OCRVerificationResult",
+    "PartialImageVerificationResult",
+    "DynamicVerificationResult",
     
     # Request Schemas
     "RunTestRequest",

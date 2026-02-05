@@ -177,15 +177,19 @@ def rag_retrieval(state: AgentState) -> AgentState:
         if test_data:
             description = test_data.get("description", "")
             steps = test_data.get("steps", [])
-            
+            step_verification_configs = test_data.get("step_verification_configs", [])
+
             logger.info(f"✅ Retrieved test: {test_data.get('title', test_id)}")
             logger.info(f"✅ Steps: {len(steps)}")
-            
+            if step_verification_configs:
+                logger.info(f"✅ Verification configs: {len(step_verification_configs)} steps configured")
+
             return {
                 **state,
                 "test_description": description,
                 "test_steps": steps,
                 "total_steps": len(steps),
+                "step_verification_configs": step_verification_configs,
                 "execution_log": state.get("execution_log", []) + [
                     f"Test case retrieved: {test_id}",
                     f"Total steps: {len(steps)}"
@@ -1425,9 +1429,6 @@ def verify_result(state: AgentState) -> AgentState:
                 "errors": state.get("errors", []) + ["Verification screenshot failed"]
             }
         
-        # Get reference image name for SSIM verification
-        reference_image_name = _get_reference_image_name(state)
-
         # Get step information for verification tracking
         current_step = state.get("current_step", 0)
         test_id = state.get("test_id")
@@ -1437,56 +1438,157 @@ def verify_result(state: AgentState) -> AgentState:
             step_description = test_steps[current_step]
 
         # ═════════════════════════════════════════════════════════
-        # COMPREHENSIVE VERIFICATION (SSIM PRIMARY)
+        # DYNAMIC VERIFICATION SYSTEM
         # ═════════════════════════════════════════════════════════
 
         from backend.tools.verification_tool import VerificationTool
+        from backend.models.results import StepVerificationConfig
+        from backend.models.enums import VerificationType
         verification_tool = VerificationTool()
 
-        # Perform comprehensive verification with SSIM
-        verification_result = verification_tool.comprehensive_verification(
-            before_screenshot=before_screenshot,
-            after_screenshot=after_screenshot,
-            reference_image_name=reference_image_name,
-            ssim_threshold=0.85,  # Configurable threshold
-            test_id=test_id,
-            step_number=current_step + 1,  # Convert to 1-based for display
-            step_description=step_description
-        )
+        # Get step verification config (if available from Excel)
+        step_verification_configs = state.get("step_verification_configs", [])
+        current_step_config = None
+
+        if current_step < len(step_verification_configs):
+            config_dict = step_verification_configs[current_step]
+            current_step_config = StepVerificationConfig.from_dict(config_dict)
+            logger.info(f"🔧 Using verification config: {current_step_config.verification_type.value}")
+
+        # Get reference image name - PRIORITY: config > AI mapping
+        # NOTE: partial_image and ocr verification types don't need reference_image_name
+        #       (they use crop_regions or expected_texts instead)
+        reference_image_name = None
+
+        # Only get reference image for full image verification
+        if current_step_config:
+            v_type = current_step_config.verification_type
+
+            # Skip reference image lookup for partial_image, ocr, and no_verification
+            if v_type == VerificationType.PARTIAL_IMAGE:
+                logger.debug(f"📸 Skipping reference lookup - using crop regions")
+            elif v_type == VerificationType.OCR:
+                logger.debug(f"📸 Skipping reference lookup - using OCR texts")
+            elif v_type == VerificationType.NONE:
+                logger.debug(f"📸 Skipping reference lookup - no verification")
+            else:
+                # Full image verification - check config first, then AI fallback
+                if current_step_config.reference_image_name:
+                    reference_image_name = current_step_config.reference_image_name
+                    logger.info(f"📸 Using reference from config: '{reference_image_name}'")
+                else:
+                    # Fall back to AI mapping only for image verification without explicit reference
+                    reference_image_name = _get_reference_image_name(state)
+        else:
+            # No config - fall back to AI mapping (backward compatibility)
+            reference_image_name = _get_reference_image_name(state)
+
+        # Use dynamic verification if config available, otherwise fall back to comprehensive
+        if current_step_config:
+            dynamic_result = verification_tool.dynamic_verification(
+                screenshot_path=after_screenshot,
+                config=current_step_config,
+                reference_image_name=reference_image_name,
+                test_id=test_id,
+                step_number=current_step + 1,
+                step_description=step_description
+            )
+
+            # Convert dynamic result to verification_result format for compatibility
+            verification_result = {
+                'overall_passed': dynamic_result.passed,
+                'ssim_verification': dynamic_result.ssim_result,
+                'ocr_verification': dynamic_result.ocr_result.to_dict() if dynamic_result.ocr_result else None,
+                'partial_verification': dynamic_result.partial_result.to_dict() if dynamic_result.partial_result else None,
+                'verification_type': dynamic_result.verification_type.value,
+                'message': dynamic_result.message
+            }
+        else:
+            # Fall back to comprehensive verification (backward compatibility)
+            verification_result = verification_tool.comprehensive_verification(
+                before_screenshot=before_screenshot,
+                after_screenshot=after_screenshot,
+                reference_image_name=reference_image_name,
+                ssim_threshold=0.85,  # Configurable threshold
+                test_id=test_id,
+                step_number=current_step + 1,  # Convert to 1-based for display
+                step_description=step_description
+            )
         
         # Log results
         logger.info("=" * 60)
         logger.info("📊 VERIFICATION RESULTS")
         logger.info("=" * 60)
-        
-        # PRIMARY: SSIM Verification
-        ssim_result = verification_result.get('ssim_verification')
+
+        # Get verification type for logging
+        verification_type = verification_result.get('verification_type', 'image_verification')
         overall_passed = verification_result.get('overall_passed', False)
-        
-        if ssim_result:
-            if ssim_result['passed']:
-                logger.info(f"✅ PRIMARY (SSIM): PASSED - Similarity: {ssim_result['similarity']:.4f}")
-            else:
-                if ssim_result['reference_found']:
-                    logger.error(f"❌ PRIMARY (SSIM): FAILED - Similarity: {ssim_result['similarity']:.4f} < {ssim_result['threshold']}")
+
+        # Initialize result variables to avoid "referenced before assignment" errors
+        ssim_result = None
+        pixel_result = None
+        ai_result = None
+
+        # Log based on verification type
+        if verification_type == 'ocr':
+            ocr_result = verification_result.get('ocr_verification')
+            if ocr_result:
+                if overall_passed:
+                    logger.info(f"✅ OCR VERIFICATION: PASSED - All texts found")
+                    logger.info(f"   Found: {ocr_result.get('found_texts', [])}")
                 else:
-                    logger.warning(f"⚠️ PRIMARY (SSIM): NO REFERENCE IMAGE - '{reference_image_name}'")
-                    # If no reference image, fall back to pixel change for pass/fail
-                    pixel_result = verification_result.get('pixel_verification')
-                    if pixel_result and pixel_result['changed']:
-                        logger.info(f"✅ FALLBACK: Screen changed {pixel_result['change_percentage']:.2f}%")
-                        overall_passed = True
-        
-        # SECONDARY: Pixel Change (Informational)
-        pixel_result = verification_result.get('pixel_verification')
-        if pixel_result:
-            logger.info(f"📊 SECONDARY (Pixel Change): {pixel_result['change_percentage']:.2f}% changed")
-        
-        # SECONDARY: AI Verification (Informational)
-        ai_result = verification_result.get('ai_verification')
-        if ai_result:
-            logger.info(f"🤖 SECONDARY (AI Vision): {ai_result.get('reasoning', 'N/A')}")
-        
+                    logger.error(f"❌ OCR VERIFICATION: FAILED - Missing texts")
+                    logger.error(f"   Missing: {ocr_result.get('missing_texts', [])}")
+
+        elif verification_type == 'partial_image':
+            partial_result = verification_result.get('partial_verification')
+            if partial_result:
+                if overall_passed:
+                    logger.info(f"✅ PARTIAL IMAGE VERIFICATION: PASSED - All regions match")
+                    logger.info(f"   Overall SSIM: {partial_result.get('overall_ssim', 0):.4f}")
+                else:
+                    logger.error(f"❌ PARTIAL IMAGE VERIFICATION: FAILED")
+                    logger.error(f"   Failed regions: {partial_result.get('failed_regions', [])}")
+                # Create ssim_result from partial verification for history tracking compatibility
+                ssim_result = {
+                    'passed': overall_passed,
+                    'similarity': partial_result.get('overall_ssim', 0),
+                    'threshold': 0.85,
+                    'reference_found': True,
+                    'comparison_image': partial_result.get('comparison_image')
+                }
+
+        elif verification_type == 'no_verification':
+            logger.info("⏭️ NO VERIFICATION: Step skipped (as configured)")
+
+        else:
+            # Full image SSIM verification (default)
+            ssim_result = verification_result.get('ssim_verification')
+
+            if ssim_result:
+                if ssim_result.get('passed', False):
+                    logger.info(f"✅ PRIMARY (SSIM): PASSED - Similarity: {ssim_result.get('similarity', 0):.4f}")
+                else:
+                    if ssim_result.get('reference_found', True):
+                        logger.error(f"❌ PRIMARY (SSIM): FAILED - Similarity: {ssim_result.get('similarity', 0):.4f} < {ssim_result.get('threshold', 0.85)}")
+                    else:
+                        logger.warning(f"⚠️ PRIMARY (SSIM): NO REFERENCE IMAGE - '{reference_image_name}'")
+                        # If no reference image, fall back to pixel change for pass/fail
+                        pixel_result = verification_result.get('pixel_verification')
+                        if pixel_result and pixel_result.get('changed', False):
+                            logger.info(f"✅ FALLBACK: Screen changed {pixel_result.get('change_percentage', 0):.2f}%")
+                            overall_passed = True
+
+            # SECONDARY: Pixel Change (Informational)
+            pixel_result = verification_result.get('pixel_verification')
+            if pixel_result:
+                logger.info(f"📊 SECONDARY (Pixel Change): {pixel_result.get('change_percentage', 0):.2f}% changed")
+
+            # SECONDARY: AI Verification (Informational)
+            ai_result = verification_result.get('ai_verification')
+            if ai_result:
+                logger.info(f"🤖 SECONDARY (AI Vision): {ai_result.get('reasoning', 'N/A')}")
+
         logger.info("=" * 60)
         
         # Update state based on PRIMARY verification

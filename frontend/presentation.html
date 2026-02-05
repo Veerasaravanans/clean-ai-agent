@@ -1,0 +1,1886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Testing Framework - Interactive Presentation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ==================== CSS Variables ==================== */
+        :root {
+            /* Brand Colors */
+            --brand-primary: #32d74b;
+            --brand-primary-light: #6aff85;
+            --brand-primary-dark: #00a12b;
+            --brand-secondary: #0a84ff;
+            --brand-accent: #ff375f;
+            --accent-cyan: #64d2ff;
+            --accent-orange: #ff9f0a;
+
+            /* Backgrounds */
+            --bg-primary: #0c0c0e;
+            --bg-secondary: #1c1c1e;
+            --bg-elevated: #2c2c2e;
+            --bg-card: rgba(28, 28, 30, 0.7);
+            --bg-glass: rgba(28, 28, 30, 0.95);
+
+            /* Glass Effects */
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-border-light: rgba(255, 255, 255, 0.2);
+
+            /* Text Colors */
+            --text-primary: #ffffff;
+            --text-secondary: #ebebf5;
+            --text-muted: #8e8e93;
+
+            /* Status Colors */
+            --status-success: #30d158;
+            --status-warning: #ffd60a;
+            --status-error: #ff453a;
+            --status-info: #64d2ff;
+
+            /* Gradients */
+            --gradient-primary: linear-gradient(135deg, #32d74b, #0a84ff);
+            --gradient-glow: linear-gradient(135deg, rgba(50, 215, 75, 0.3), rgba(10, 132, 255, 0.3));
+            --shadow-glow: 0 0 30px rgba(50, 215, 75, 0.3);
+
+            /* Transitions */
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ==================== Reset & Base ==================== */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-color: #111;
+            background-image:
+                linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a),
+                linear-gradient(45deg, #1a1a1a 25%, transparent 25%, transparent 75%, #1a1a1a 75%, #1a1a1a);
+            background-position: 0 0, 10px 10px;
+            background-size: 20px 20px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* ==================== Custom Scrollbar ==================== */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(17, 24, 39, 0.5);
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, var(--brand-primary), var(--brand-secondary));
+            border-radius: 9999px;
+            border: 2px solid transparent;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--brand-primary-light);
+        }
+
+        /* ==================== Progress Bar ==================== */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: var(--gradient-primary);
+            z-index: 1000;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px var(--brand-primary), 0 0 20px var(--brand-secondary);
+        }
+
+        /* ==================== Particle Background ==================== */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* ==================== Navigation ==================== */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-glass);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .nav-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: var(--transition-smooth);
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--gradient-primary);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--brand-primary);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-links a.active {
+            color: var(--brand-primary);
+        }
+
+        /* ==================== Section Base ==================== */
+        .section {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .section-content {
+            max-width: 1200px;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .section-title {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+        }
+
+        .section-subtitle {
+            font-size: clamp(1.1rem, 2vw, 1.5rem);
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        /* ==================== Glass Cards ==================== */
+        .glass-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid var(--glass-border-light);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: var(--transition-smooth);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--brand-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        /* ==================== Grid Layouts ==================== */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        /* ==================== Section 1: Problem Statement ==================== */
+        #section-1 .stat-reveal {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1rem 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: var(--transition-smooth);
+        }
+
+        #section-1 .stat-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #section-1 .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: var(--status-error);
+            margin-bottom: 0.5rem;
+        }
+
+        #section-1 .stat-label {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        #section-1 .hook {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--brand-primary);
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: var(--gradient-glow);
+            border-radius: 12px;
+            border: 1px solid var(--brand-primary);
+        }
+
+        /* ==================== Section 2: Vision ==================== */
+        #section-2 .benefit-card {
+            text-align: center;
+        }
+
+        #section-2 .benefit-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        #section-2 .benefit-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--brand-primary);
+        }
+
+        #section-2 .benefit-description {
+            color: var(--text-secondary);
+        }
+
+        /* ==================== Section 3: How It Works ==================== */
+        #section-3 .steps-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        #section-3 .step-card {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            cursor: pointer;
+        }
+
+        #section-3 .step-number {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        #section-3 .step-content {
+            flex: 1;
+        }
+
+        #section-3 .step-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        #section-3 .step-description {
+            color: var(--text-secondary);
+        }
+
+        /* ==================== Section 4: AI Brain ==================== */
+        #section-4 .brain-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        #section-4 .brain-category {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        #section-4 .brain-category:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--brand-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        #section-4 .brain-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #section-4 .brain-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        #section-4 .brain-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        #section-4 .brain-models {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        #section-4 .brain-models.expanded {
+            display: block;
+        }
+
+        #section-4 .model-tag {
+            display: inline-block;
+            background: rgba(50, 215, 75, 0.2);
+            color: var(--brand-primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            margin: 0.25rem;
+        }
+
+        /* ==================== Section 5: RAG Learning ==================== */
+        #section-5 .timeline {
+            position: relative;
+            padding: 2rem 0;
+            margin-top: 2rem;
+        }
+
+        #section-5 .timeline-item {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        #section-5 .timeline-marker {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        #section-5 .timeline-content {
+            flex: 1;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        #section-5 .timeline-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        #section-5 .timeline-metric {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--brand-primary);
+        }
+
+        #section-5 .speedometer {
+            width: 200px;
+            height: 100px;
+            margin: 2rem auto;
+            position: relative;
+        }
+
+        #section-5 .speedometer-arc {
+            stroke: var(--glass-border);
+            fill: none;
+            stroke-width: 20;
+        }
+
+        #section-5 .speedometer-progress {
+            stroke: url(#speedometer-gradient);
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        /* ==================== Section 6: Verification ==================== */
+        #section-6 .verification-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        #section-6 .tab-button {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            font-family: inherit;
+            font-size: 1rem;
+        }
+
+        #section-6 .tab-button.active {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: var(--brand-primary);
+        }
+
+        #section-6 .tab-content {
+            display: none;
+        }
+
+        #section-6 .tab-content.active {
+            display: block;
+        }
+
+        #section-6 .ssim-demo {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        #section-6 .ssim-score {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        #section-6 .score-bar {
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        #section-6 .score-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* ==================== Section 7: HITL ==================== */
+        #section-7 .hitl-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        #section-7 .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        #section-7 .flow-step:hover {
+            transform: translateX(10px);
+            border-color: var(--brand-primary);
+        }
+
+        #section-7 .flow-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        #section-7 .flow-icon.green {
+            background: rgba(48, 209, 88, 0.2);
+            color: var(--status-success);
+        }
+
+        #section-7 .flow-icon.yellow {
+            background: rgba(255, 214, 10, 0.2);
+            color: var(--status-warning);
+        }
+
+        #section-7 .flow-icon.blue {
+            background: rgba(10, 132, 255, 0.2);
+            color: var(--brand-secondary);
+        }
+
+        #section-7 .flow-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        #section-7 .flow-description {
+            color: var(--text-secondary);
+        }
+
+        /* ==================== Section 8: Workflow ==================== */
+        #section-8 .workflow-demo {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        #section-8 .workflow-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        #section-8 .control-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: var(--transition-smooth);
+        }
+
+        #section-8 .control-button:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-glow);
+        }
+
+        #section-8 .workflow-nodes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        #section-8 .workflow-node {
+            background: var(--bg-secondary);
+            border: 2px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            transition: var(--transition-smooth);
+        }
+
+        #section-8 .workflow-node.active {
+            border-color: var(--brand-primary);
+            background: rgba(50, 215, 75, 0.1);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-glow);
+        }
+
+        #section-8 .workflow-node.completed {
+            border-color: var(--status-success);
+            background: rgba(48, 209, 88, 0.1);
+        }
+
+        #section-8 .workflow-metrics {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: rgba(50, 215, 75, 0.1);
+            border: 1px solid var(--brand-primary);
+            border-radius: 12px;
+        }
+
+        #section-8 .metric-item {
+            text-align: center;
+        }
+
+        #section-8 .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--brand-primary);
+        }
+
+        #section-8 .metric-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* ==================== Section 9: Results ==================== */
+        #section-9 .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        #section-9 .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            transition: var(--transition-smooth);
+        }
+
+        #section-9 .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--brand-primary);
+            box-shadow: var(--shadow-glow);
+        }
+
+        #section-9 .stat-value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        #section-9 .stat-title {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #section-9 .comparison-chart {
+            margin-top: 3rem;
+            padding: 2rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+        }
+
+        /* ==================== Section 10: Future ==================== */
+        #section-10 .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        #section-10 .feature-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: var(--transition-smooth);
+            cursor: pointer;
+        }
+
+        #section-10 .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--status-warning);
+            box-shadow: 0 0 30px rgba(255, 214, 10, 0.2);
+        }
+
+        #section-10 .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        #section-10 .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        #section-10 .feature-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        #section-10 .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 3rem;
+            flex-wrap: wrap;
+        }
+
+        #section-10 .cta-button {
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #section-10 .cta-button.primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+        }
+
+        #section-10 .cta-button.secondary {
+            background: transparent;
+            color: var(--brand-primary);
+            border: 2px solid var(--brand-primary);
+        }
+
+        #section-10 .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px var(--brand-primary);
+        }
+
+        /* ==================== Animations ==================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .animate-fadeInUp {
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* ==================== Responsive Design ==================== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .section {
+                padding: 2rem 1rem;
+            }
+
+            .section-title {
+                font-size: 2rem;
+            }
+
+            .grid-2, .grid-3, .grid-4 {
+                grid-template-columns: 1fr;
+            }
+
+            #section-3 .step-card {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            #section-7 .hitl-flow {
+                gap: 0.5rem;
+            }
+
+            #section-8 .workflow-nodes {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .section-content {
+                max-width: 900px;
+            }
+        }
+
+        /* ==================== Tooltips ==================== */
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: var(--brand-primary);
+            border-bottom: 1px dashed var(--brand-primary);
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background-color: var(--bg-glass);
+            color: var(--text-primary);
+            text-align: center;
+            border-radius: 8px;
+            padding: 0.75rem;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid var(--glass-border);
+            font-size: 0.85rem;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* ==================== Scroll Indicator ==================== */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator svg {
+            width: 30px;
+            height: 30px;
+            stroke: var(--text-muted);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Particle Background -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <div class="nav-logo">AI Agent Testing Framework</div>
+            <ul class="nav-links">
+                <li><a href="#section-1">Problem</a></li>
+                <li><a href="#section-2">Vision</a></li>
+                <li><a href="#section-3">How It Works</a></li>
+                <li><a href="#section-4">AI Brain</a></li>
+                <li><a href="#section-5">Learning</a></li>
+                <li><a href="#section-6">Verification</a></li>
+                <li><a href="#section-7">HITL</a></li>
+                <li><a href="#section-8">Live Demo</a></li>
+                <li><a href="#section-9">Results</a></li>
+                <li><a href="#section-10">Future</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Section 1: Problem Statement -->
+    <section class="section" id="section-1">
+        <div class="section-content">
+            <h1 class="section-title">Testing Automotive UI is Hardcoded, Repetitive, and High Maintenance</h1>
+            <p class="section-subtitle">Manual testing - time, money, and introduces human errors</p>
+
+            <div class="grid-3">
+                <div class="stat-reveal">
+                    <div class="stat-number">15-20%</div>
+                    <div class="stat-label">Human error rate</div>
+                </div>
+                <div class="stat-reveal">
+                    <div class="stat-number">60%</div>
+                    <div class="stat-label">Time wasted on repeated tests</div>
+                </div>
+            </div>
+
+            <div class="hook">
+                What if AI could do this without any scripts and faster with near-perfect accuracy?
+            </div>
+        </div>
+
+        <div class="scroll-indicator">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Section 2: The Vision -->
+    <section class="section" id="section-2">
+        <div class="section-content">
+            <h1 class="section-title">Meet Your AI Testing Partner</h1>
+            <p class="section-subtitle">An AI agent that watches, learns, and tests automatically</p>
+
+            <div class="grid-3">
+                <div class="glass-card benefit-card">
+                    <div class="benefit-icon">🧠</div>
+                    <h3 class="benefit-title">Learns from Your Actions</h3>
+                    <p class="benefit-description">The AI observes successful tests and remembers the patterns, executing 95% faster on repeat tests.</p>
+                </div>
+                <div class="glass-card benefit-card">
+                    <div class="benefit-icon">🌙</div>
+                    <h3 class="benefit-title">Tests While You Sleep</h3>
+                    <p class="benefit-description">Set it up once and run automated test suites overnight without any human intervention.</p>
+                </div>
+                <div class="glass-card benefit-card">
+                    <div class="benefit-icon">🛡️</div>
+                    <h3 class="benefit-title">Never Repeats Mistakes</h3>
+                    <p class="benefit-description">Every successful test is stored in a knowledge base. The AI learns continuously and improves accuracy over time.</p>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 3rem; padding: 2rem;">
+                <h3 style="text-align: center; margin-bottom: 1rem; font-size: 1.25rem;">The Difference</h3>
+                <div class="grid-2">
+                    <div>
+                        <h4 style="color: var(--status-error); margin-bottom: 0.5rem;">Manual Testing ❌</h4>
+                        <ul style="color: var(--text-secondary); list-style-position: inside;">
+                            <li>Slow and repetitive</li>
+                            <li>Human errors creep in</li>
+                            <li>QA team exhausted</li>
+                            <li>Expensive to scale</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color: var(--status-success); margin-bottom: 0.5rem;">AI Testing ✅</h4>
+                        <ul style="color: var(--text-secondary); list-style-position: inside;">
+                            <li>3x faster execution</li>
+                            <li>96%+ accuracy rate</li>
+                            <li>Works 24/7</li>
+                            <li>Learns and improves</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: How It Works -->
+    <section class="section" id="section-3">
+        <div class="section-content">
+            <h1 class="section-title">Three Simple Steps</h1>
+            <p class="section-subtitle">No coding required - just upload, watch, and verify</p>
+
+            <div class="steps-container">
+                <div class="glass-card step-card">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3 class="step-title">UPLOAD</h3>
+                        <p class="step-description">Upload your test cases in Excel format. No coding needed - just describe what you want to test in plain language.</p>
+                    </div>
+                </div>
+
+                <div class="glass-card step-card">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3 class="step-title">WATCH</h3>
+                        <p class="step-description">The AI analyzes your device screen like a human tester would, identifying UI elements and planning actions automatically.</p>
+                    </div>
+                </div>
+
+                <div class="glass-card step-card">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3 class="step-title">VERIFY</h3>
+                        <p class="step-description">Pixel-perfect verification using <span class="tooltip">SSIM<span class="tooltiptext">Structural Similarity Index - measures how similar two images are</span></span>, <span class="tooltip">OCR<span class="tooltiptext">Optical Character Recognition - reads text from images</span></span>, and AI Vision to ensure every test passes accurately.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 2rem; text-align: center; padding: 2rem; background: rgba(50, 215, 75, 0.1); border-color: var(--brand-primary);">
+                <h3 style="margin-bottom: 1rem;">Example: Testing Settings Navigation</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 1rem;">Excel Row: "Open Settings → Navigate to Bluetooth → Enable Bluetooth"</p>
+                <p style="color: var(--brand-primary); font-weight: 600;">AI executes in 28 seconds with 96% accuracy ✓</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: The AI Brain -->
+    <section class="section" id="section-4">
+        <div class="section-content">
+            <h1 class="section-title">40+ AI Models Working for You</h1>
+            <p class="section-subtitle">A brain network of specialized AI models handles every testing challenge</p>
+
+            <div class="brain-grid">
+                <div class="glass-card brain-category" onclick="toggleBrainModels(this)">
+                    <div class="brain-icon">🔍</div>
+                    <h3 class="brain-title">The Detectives</h3>
+                    <p class="brain-description">Vision models that find UI elements and analyze screens</p>
+                    <div class="brain-models">
+                        <span class="model-tag">Claude Sonnet 4.5</span>
+                        <span class="model-tag">GPT-4V</span>
+                        <span class="model-tag">Gemini 2.5 Pro</span>
+                        <span class="model-tag">PaddleOCR</span>
+                        <span class="model-tag">EasyOCR</span>
+                        <span class="model-tag">Tesseract</span>
+                    </div>
+                </div>
+
+                <div class="glass-card brain-category" onclick="toggleBrainModels(this)">
+                    <div class="brain-icon">⚡</div>
+                    <h3 class="brain-title">The Speed Demons</h3>
+                    <p class="brain-description">Fast models for quick decisions and rapid execution</p>
+                    <div class="brain-models">
+                        <span class="model-tag">GPT-4o Mini</span>
+                        <span class="model-tag">Gemini Flash</span>
+                        <span class="model-tag">Claude Haiku</span>
+                        <span class="model-tag">Llama 3.3</span>
+                    </div>
+                </div>
+
+                <div class="glass-card brain-category" onclick="toggleBrainModels(this)">
+                    <div class="brain-icon">🎓</div>
+                    <h3 class="brain-title">The Professors</h3>
+                    <p class="brain-description">Reasoning models for complex problem-solving</p>
+                    <div class="brain-models">
+                        <span class="model-tag">o3 Mini</span>
+                        <span class="model-tag">o1</span>
+                        <span class="model-tag">Claude Opus 4.5</span>
+                        <span class="model-tag">Gemini Pro 2.5</span>
+                        <span class="model-tag">DeepSeek R1</span>
+                    </div>
+                </div>
+
+                <div class="glass-card brain-category" onclick="toggleBrainModels(this)">
+                    <div class="brain-icon">🎨</div>
+                    <h3 class="brain-title">The Artists</h3>
+                    <p class="brain-description">Image analysis and visual verification specialists</p>
+                    <div class="brain-models">
+                        <span class="model-tag">SSIM Engine</span>
+                        <span class="model-tag">OpenCV</span>
+                        <span class="model-tag">Pillow</span>
+                        <span class="model-tag">scikit-image</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 2rem; text-align: center; padding: 2rem;">
+                <p style="font-size: 1.1rem; color: var(--text-secondary);">The AI automatically selects the best model for each task, switching between fast, accurate, and specialized models based on the situation.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: The Memory (RAG Learning) -->
+    <section class="section" id="section-5">
+        <div class="section-content">
+            <h1 class="section-title">It Gets Smarter Every Time</h1>
+            <p class="section-subtitle">Like a tester's notebook that never forgets - powered by <span class="tooltip">RAG<span class="tooltiptext">Retrieval-Augmented Generation - AI that stores and recalls learned solutions</span></span> technology</p>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-marker">1st</div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">First Run - Learning Phase</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">AI analyzes screen, plans actions, executes test</p>
+                        <div class="timeline-metric">45 seconds</div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker">2nd</div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Second Run - Memory Activated</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">AI recalls learned solution and executes directly</p>
+                        <div class="timeline-metric">15 seconds <span style="font-size: 1rem; color: var(--status-success);">(3x faster!)</span></div>
+                    </div>
+                </div>
+
+                <div class="timeline-item">
+                    <div class="timeline-marker">∞</div>
+                    <div class="timeline-content">
+                        <h3 class="timeline-title">Every Future Run - Perfect Recall</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">100% accuracy with instant execution</p>
+                        <div class="timeline-metric">~15 seconds <span style="font-size: 1rem; color: var(--brand-primary);">(Consistent)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 2rem; padding: 2rem;">
+                <h3 style="text-align: center; margin-bottom: 1rem;">Real Improvement Metrics</h3>
+                <div class="grid-3">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--brand-primary);">95%</div>
+                        <div style="color: var(--text-secondary);">Faster Execution</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--brand-primary);">100%</div>
+                        <div style="color: var(--text-secondary);">Success Rate</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2.5rem; font-weight: 700; color: var(--brand-primary);">40+</div>
+                        <div style="color: var(--text-secondary);">Tests Learned</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Verification Superpowers -->
+    <section class="section" id="section-6">
+        <div class="section-content">
+            <h1 class="section-title">Triple-Layer Verification</h1>
+            <p class="section-subtitle">Three independent verification methods ensure nothing slips through</p>
+
+            <div class="verification-tabs">
+                <button class="tab-button active" onclick="switchVerificationTab(0)">Image Comparison</button>
+                <button class="tab-button" onclick="switchVerificationTab(1)">Text Detection</button>
+                <button class="tab-button" onclick="switchVerificationTab(2)">AI Vision</button>
+            </div>
+
+            <div class="tab-content active" id="verification-tab-0">
+                <div class="ssim-demo">
+                    <h3 style="text-align: center; margin-bottom: 1rem; font-size: 1.5rem;">SSIM - Picture Perfect Matching</h3>
+                    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Structural Similarity Index measures pixel-level accuracy</p>
+
+                    <div class="ssim-score" id="ssim-score">0.961</div>
+
+                    <div class="score-bar">
+                        <div class="score-fill" id="score-fill" style="width: 96.1%;">96.1%</div>
+                    </div>
+
+                    <div class="grid-3" style="margin-top: 2rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--status-success);">0.982</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">App Launcher Test</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--status-success);">0.948</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Settings Test</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: 600; color: var(--status-success);">0.953</div>
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Notifications Test</div>
+                        </div>
+                    </div>
+
+                    <p style="text-align: center; margin-top: 2rem; color: var(--text-secondary);">
+                        <strong style="color: var(--brand-primary);">Real data from production tests</strong><br>
+                        Threshold: 0.85 | All tests: PASSED ✓
+                    </p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="verification-tab-1">
+                <div class="ssim-demo">
+                    <h3 style="text-align: center; margin-bottom: 1rem; font-size: 1.5rem;">OCR - Text Detective</h3>
+                    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">15 preprocessing techniques for perfect text recognition</p>
+
+                    <div class="grid-2" style="margin-top: 2rem;">
+                        <div class="glass-card" style="background: rgba(50, 215, 75, 0.1);">
+                            <h4 style="margin-bottom: 1rem;">Multi-Engine OCR</h4>
+                            <ul style="color: var(--text-secondary); list-style-position: inside;">
+                                <li>PaddleOCR - Chinese/Complex text</li>
+                                <li>EasyOCR - Multi-language support</li>
+                                <li>Tesseract - High accuracy</li>
+                            </ul>
+                        </div>
+                        <div class="glass-card" style="background: rgba(10, 132, 255, 0.1);">
+                            <h4 style="margin-bottom: 1rem;">15 Preprocessing Presets</h4>
+                            <ul style="color: var(--text-secondary); list-style-position: inside;">
+                                <li>Grayscale & Threshold</li>
+                                <li>Contrast Enhancement</li>
+                                <li>Noise Reduction</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <p style="text-align: center; margin-top: 2rem; color: var(--text-secondary);">
+                        <strong style="color: var(--brand-primary);">Smart Text Matching</strong><br>
+                        Handles different fonts, sizes, and screen conditions
+                    </p>
+                </div>
+            </div>
+
+            <div class="tab-content" id="verification-tab-2">
+                <div class="ssim-demo">
+                    <h3 style="text-align: center; margin-bottom: 1rem; font-size: 1.5rem;">AI Vision - Smart Eye Check</h3>
+                    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">AI models understand context and visual intent</p>
+
+                    <div class="grid-3" style="margin-top: 2rem;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">👁️</div>
+                            <h4 style="margin-bottom: 0.5rem;">Claude Sonnet 4.5</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Primary vision analysis</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+                            <h4 style="margin-bottom: 0.5rem;">GPT-4V</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Detailed element detection</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">✨</div>
+                            <h4 style="margin-bottom: 0.5rem;">Gemini Pro</h4>
+                            <p style="color: var(--text-secondary); font-size: 0.9rem;">Fast visual verification</p>
+                        </div>
+                    </div>
+
+                    <p style="text-align: center; margin-top: 2rem; color: var(--text-secondary);">
+                        <strong style="color: var(--brand-primary);">Intelligent Understanding</strong><br>
+                        AI understands "Settings button" even if the UI changes slightly
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 7: Human + AI (HITL) -->
+    <section class="section" id="section-7">
+        <div class="section-content">
+            <h1 class="section-title">You're Always in Control</h1>
+            <p class="section-subtitle">Human-in-the-Loop: AI asks for help when it needs guidance</p>
+
+            <div class="hitl-flow">
+                <div class="flow-step">
+                    <div class="flow-icon green">✓</div>
+                    <div>
+                        <h3 class="flow-title">1. Normal - AI Works Smoothly</h3>
+                        <p class="flow-description">AI executes tests automatically with high confidence</p>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-icon yellow">⚠</div>
+                    <div>
+                        <h3 class="flow-title">2. Problem - AI Pauses & Asks</h3>
+                        <p class="flow-description">When AI can't locate an element after retries, it pauses and requests human guidance</p>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-icon blue">👤</div>
+                    <div>
+                        <h3 class="flow-title">3. Human Guides - You Provide Hint</h3>
+                        <p class="flow-description">Click on the screenshot to show the AI where the element is located</p>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-icon green">🧠</div>
+                    <div>
+                        <h3 class="flow-title">4. AI Learns - Remembers Guidance</h3>
+                        <p class="flow-description">AI stores your guidance and handles similar situations automatically next time</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 2rem; padding: 2rem;">
+                <h3 style="text-align: center; margin-bottom: 1.5rem;">HITL Success Metrics</h3>
+                <div class="grid-2">
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--brand-primary);">95%</div>
+                        <div style="color: var(--text-secondary);">Tests handled autonomously</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 3rem; font-weight: 700; color: var(--status-warning);">5%</div>
+                        <div style="color: var(--text-secondary);">Required human guidance</div>
+                    </div>
+                </div>
+                <p style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary);">
+                    After human guidance, AI handles those scenarios automatically forever
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 8: Live Workflow Visualization -->
+    <section class="section" id="section-8">
+        <div class="section-content">
+            <h1 class="section-title">See It In Action</h1>
+            <p class="section-subtitle">Real execution: "Open Settings → Enable Bluetooth"</p>
+
+            <div class="workflow-demo">
+                <div class="workflow-controls">
+                    <button class="control-button" onclick="playWorkflow()">▶ Play</button>
+                    <button class="control-button" onclick="pauseWorkflow()">⏸ Pause</button>
+                    <button class="control-button" onclick="resetWorkflow()">↻ Reset</button>
+                </div>
+
+                <div class="workflow-nodes">
+                    <div class="workflow-node" id="node-0">Check Resume</div>
+                    <div class="workflow-node" id="node-1">Detect Mode</div>
+                    <div class="workflow-node" id="node-2">RAG Retrieval</div>
+                    <div class="workflow-node" id="node-3">Capture Screen</div>
+                    <div class="workflow-node" id="node-4">AI Analyze</div>
+                    <div class="workflow-node" id="node-5">Plan Action</div>
+                    <div class="workflow-node" id="node-6">Execute ADB</div>
+                    <div class="workflow-node" id="node-7">Verify Result</div>
+                    <div class="workflow-node" id="node-8">Save Learned</div>
+                </div>
+
+                <div class="workflow-metrics">
+                    <div class="metric-item">
+                        <div class="metric-value" id="workflow-time">0s</div>
+                        <div class="metric-label">Execution Time</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="workflow-ssim">0.000</div>
+                        <div class="metric-label">SSIM Score</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value" id="workflow-status">READY</div>
+                        <div class="metric-label">Status</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 2rem; padding: 2rem; background: rgba(50, 215, 75, 0.1); border-color: var(--brand-primary);">
+                <h3 style="text-align: center; margin-bottom: 1rem;">Real Test Results</h3>
+                <p style="text-align: center; color: var(--text-secondary);">
+                    <strong>Test:</strong> NAID-NEW-003 (3 steps)<br>
+                    <strong>Duration:</strong> 28 seconds<br>
+                    <strong>Average SSIM:</strong> 0.961<br>
+                    <strong>Result:</strong> <span style="color: var(--status-success); font-weight: 700;">✅ PASSED</span>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 9: Real Results & Impact -->
+    <section class="section" id="section-9">
+        <div class="section-content">
+            <h1 class="section-title">Real Results from Real Tests</h1>
+            <p class="section-subtitle">Data from production environment testing</p>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-tests">0</div>
+                    <div class="stat-title">Tests Executed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-ssim">0.0%</div>
+                    <div class="stat-title">Avg SSIM Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-speed">0x</div>
+                    <div class="stat-title">Faster Execution</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-success">0%</div>
+                    <div class="stat-title">Success Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="stat-models">40+</div>
+                    <div class="stat-title">AI Models</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 10: Future & CTA -->
+    <section class="section" id="section-10">
+        <div class="section-content">
+            <h1 class="section-title">Just Getting Started</h1>
+            <p class="section-subtitle">From prototype to production - the future is bright</p>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h3 class="feature-title">CI/CD Integration</h3>
+                    <p class="feature-description">Seamless integration with your continuous integration pipeline for automated testing on every commit</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔧</div>
+                    <h3 class="feature-title">Self-Healing Tests</h3>
+                    <p class="feature-description">AI automatically adapts to UI changes and updates test scripts without manual intervention</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3 class="feature-title">Multi-Device Support</h3>
+                    <p class="feature-description">Test across multiple resolutions and device profiles simultaneously</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">✋</div>
+                    <h3 class="feature-title">Advanced Gestures</h3>
+                    <p class="feature-description">Support for complex interactions like drag-and-drop, pinch-to-zoom, and multi-touch gestures</p>
+                </div>
+            </div>
+
+            <div class="glass-card" style="margin-top: 3rem; padding: 2rem; text-align: center;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.5rem;">The Roadmap</h3>
+                <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="font-size: 1.2rem; color: var(--status-success); font-weight: 600;">✓ Phase 1-7</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Foundation Complete</div>
+                    </div>
+                    <div style="font-size: 2rem; color: var(--text-muted);">→</div>
+                    <div>
+                        <div style="font-size: 1.2rem; color: var(--status-warning); font-weight: 600;">⚡ Phase 8</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Real Project Testing</div>
+                    </div>
+                    <div style="font-size: 2rem; color: var(--text-muted);">→</div>
+                    <div>
+                        <div style="font-size: 1.2rem; color: var(--brand-primary); font-weight: 600;">🎯 Phase 9</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">CI/CT Pipeline</div>
+                    </div>
+                    <div style="font-size: 2rem; color: var(--text-muted);">→</div>
+                    <div>
+                        <div style="font-size: 1.2rem; color: var(--accent-cyan); font-weight: 600;">🚀 Phase 10</div>
+                        <div style="color: var(--text-secondary); font-size: 0.9rem;">Production Ready</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="index.html" class="cta-button primary">
+                    <span>Launch Dashboard</span>
+                    <span>→</span>
+                </a>
+                <a href="milestones.html" class="cta-button secondary">
+                    <span>View Milestones</span>
+                </a>
+                <a href="workflow.html" class="cta-button secondary">
+                    <span>See Workflow</span>
+                </a>
+            </div>
+
+            <p style="text-align: center; margin-top: 3rem; color: var(--text-muted); font-size: 0.9rem;">
+                Built with ❤️ by the AI Agent Testing Team<br>
+                Powered by 40+ AI models via VIO Cloud Platform
+            </p>
+        </div>
+    </section>
+
+    <!-- JavaScript -->
+    <script>
+        // ==================== Progress Bar ====================
+        function updateProgressBar() {
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const progress = (scrollTop / scrollHeight) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        }
+
+        window.addEventListener('scroll', updateProgressBar);
+
+        // ==================== Particle Background ====================
+        const canvas = document.getElementById('particles-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        const particles = [];
+        const particleCount = window.innerWidth < 768 ? 30 : 60;
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = (Math.random() - 0.5) * 0.5;
+                this.opacity = Math.random() * 0.5 + 0.2;
+                this.color = this.getRandomColor();
+            }
+
+            getRandomColor() {
+                const colors = ['50, 215, 75', '10, 132, 255', '100, 210, 255'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${this.color}, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push(new Particle());
+        }
+
+        function connectParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(50, 215, 75, ${0.1 * (1 - distance / 150)})`;
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            particles.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+
+            connectParticles();
+            requestAnimationFrame(animateParticles);
+        }
+
+        animateParticles();
+
+        // ==================== Scroll Animations ====================
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.2
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.stat-reveal').forEach(el => {
+            observer.observe(el);
+        });
+
+        // ==================== Navigation Active Link ====================
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('.nav-links a');
+
+        function updateActiveLink() {
+            const scrollPosition = window.scrollY + 200;
+
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionId = section.getAttribute('id');
+
+                if (scrollPosition >= sectionTop) {
+                    navLinks.forEach(link => link.classList.remove('active'));
+                    const activeLink = document.querySelector(`.nav-links a[href="#${sectionId}"]`);
+                    if (activeLink) {
+                        activeLink.classList.add('active');
+                    }
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveLink);
+
+        // ==================== Smooth Scroll ====================
+        document.querySelectorAll('.nav-links a').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+
+                if (targetElement) {
+                    const navHeight = document.querySelector('.nav').offsetHeight;
+                    const targetPosition = targetElement.offsetTop - navHeight;
+
+                    window.scrollTo({
+                        top: targetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // ==================== Brain Models Toggle ====================
+        function toggleBrainModels(element) {
+            const modelsDiv = element.querySelector('.brain-models');
+            modelsDiv.classList.toggle('expanded');
+        }
+
+        // ==================== Verification Tabs ====================
+        let currentVerificationTab = 0;
+
+        function switchVerificationTab(index) {
+            const tabs = document.querySelectorAll('.tab-button');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+
+            tabs[index].classList.add('active');
+            contents[index].classList.add('active');
+
+            currentVerificationTab = index;
+        }
+
+        // ==================== Workflow Animation ====================
+        let workflowInterval;
+        let workflowRunning = false;
+        let currentNode = 0;
+
+        const workflowSteps = [
+            { time: 2, ssim: 0.000, status: 'CHECK RESUME' },
+            { time: 4, ssim: 0.000, status: 'DETECT MODE' },
+            { time: 6, ssim: 0.000, status: 'RAG RETRIEVAL' },
+            { time: 9, ssim: 0.000, status: 'CAPTURE SCREEN' },
+            { time: 13, ssim: 0.000, status: 'AI ANALYZE' },
+            { time: 16, ssim: 0.000, status: 'PLAN ACTION' },
+            { time: 19, ssim: 0.000, status: 'EXECUTE ADB' },
+            { time: 24, ssim: 0.982, status: 'VERIFYING...' },
+            { time: 28, ssim: 0.982, status: '✅ PASSED' }
+        ];
+
+        function playWorkflow() {
+            if (workflowRunning) return;
+
+            resetWorkflow();
+            workflowRunning = true;
+
+            let stepIndex = 0;
+            workflowInterval = setInterval(() => {
+                if (stepIndex >= workflowSteps.length) {
+                    pauseWorkflow();
+                    return;
+                }
+
+                const step = workflowSteps[stepIndex];
+                const node = document.getElementById(`node-${stepIndex}`);
+
+                if (node) {
+                    node.classList.add('active');
+                    setTimeout(() => {
+                        node.classList.remove('active');
+                        node.classList.add('completed');
+                    }, 500);
+                }
+
+                document.getElementById('workflow-time').textContent = step.time + 's';
+                document.getElementById('workflow-ssim').textContent = step.ssim.toFixed(3);
+                document.getElementById('workflow-status').textContent = step.status;
+
+                stepIndex++;
+            }, 2000);
+        }
+
+        function pauseWorkflow() {
+            workflowRunning = false;
+            clearInterval(workflowInterval);
+        }
+
+        function resetWorkflow() {
+            pauseWorkflow();
+            currentNode = 0;
+
+            document.querySelectorAll('.workflow-node').forEach(node => {
+                node.classList.remove('active', 'completed');
+            });
+
+            document.getElementById('workflow-time').textContent = '0s';
+            document.getElementById('workflow-ssim').textContent = '0.000';
+            document.getElementById('workflow-status').textContent = 'READY';
+        }
+
+        // ==================== Animated Counters ====================
+        function animateCounter(id, target, suffix = '', duration = 2000) {
+            const element = document.getElementById(id);
+            const start = 0;
+            const increment = target / (duration / 16);
+            let current = start;
+
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    current = target;
+                    clearInterval(timer);
+                }
+                element.textContent = Math.floor(current) + suffix;
+            }, 16);
+        }
+
+        // ==================== Initialize Counters on Scroll ====================
+        const statsObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && entry.target.id === 'section-9') {
+                    animateCounter('stat-tests', 40, '+');
+                    animateCounter('stat-ssim', 96.1, '%');
+                    animateCounter('stat-speed', 3, 'x');
+                    animateCounter('stat-success', 100, '%');
+                    statsObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        statsObserver.observe(document.getElementById('section-9'));
+
+        // ==================== Initial Animations ====================
+        window.addEventListener('load', () => {
+            // Trigger stat reveals in section 1
+            setTimeout(() => {
+                document.querySelectorAll('.stat-reveal').forEach((el, index) => {
+                    setTimeout(() => {
+                        el.classList.add('visible');
+                    }, index * 200);
+                });
+            }, 500);
+        });
+    </script>
+</body>
+</html>

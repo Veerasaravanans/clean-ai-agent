@@ -1,0 +1,74 @@
+
+CLEAN_AI-AGENT/
+│
+├── 📁 backend/                      # FastAPI Backend
+│   ├── __init__.py
+│   ├── main.py                      # Entry point (50 lines)
+│   ├── config.py                    # Configuration (100 lines)
+│   │
+│   ├── 📁 routes/                   # API Routes (5 files, ~150 lines each)
+│   │   ├── __init__.py
+│   │   ├── test_execution.py
+│   │   ├── standalone.py
+│   │   ├── hitl.py
+│   │   ├── status.py
+│   │   └── stream.py
+│   │
+│   ├── 📁 services/                 # Business Logic (3 files)
+│   │   ├── __init__.py
+│   │   ├── agent_orchestrator.py    # (200 lines - orchestration only)
+│   │   ├── screen_streamer.py       # (150 lines)
+│   │   └── verification_engine.py   # (200 lines)
+│   │
+│   ├── 📁 tools/                    # Agent Tools (6 files)
+│   │   ├── __init__.py
+│   │   ├── toolkit.py               # (100 lines - unified interface)
+│   │   ├── adb_tool.py              # (200 lines)
+│   │   ├── vision_tool.py           # (300 lines)
+│   │   ├── screenshot_tool.py       # (150 lines)
+│   │   ├── verification_tool.py     # (150 lines)
+│   │   └── rag_tool.py    
+│   │   └── excel_parser.py        
+│   │
+│   ├── 📁 langgraph/                # LangGraph Workflow (4 files)
+│   │   ├── __init__.py
+│   │   ├── state.py                 # (100 lines - AgentState)
+│   │   ├── nodes.py                 # (400 lines - 15 node functions)
+│   │   ├── edges.py                 # (100 lines - routing logic)
+│   │   └── graph.py                 # (100 lines - graph compilation)
+│   │
+│   └── 📁 models/                   # Data Models (3 files)
+│       ├── __init__.py
+│       ├── enums.py                 # (100 lines)
+│       ├── results.py               # (200 lines - data classes)
+│       └── schemas.py               # (300 lines - Pydantic)
+│
+├── 📁 frontend/                     # Web UI (3 files)
+│   ├── index.html                   
+│   ├── styles.css                   
+│   └── app.js                      
+│
+├── 📁 data/                         # Data Storage
+│   ├── 📁 test_cases/
+│   ├── 📁 prompts/
+│   ├── 📁 vector_db/
+│   ├── 📁 results/
+│   └── 📁 screenshots/
+│              
+├── 📁 tests/                        # Test Suite
+│   ├── 📁 unit/
+│   ├── 📁 integration/
+│   └── 📁 e2e/
+│
+├── 📁 scripts/                      # Utility Scripts
+│   ├── init_rag.py
+│   ├── index_test_cases.py
+│   └── health_check.py
+│
+├── .env
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+the above structure is not the final one many new files are added so dont completely depend on this file for the whole understanding of the ai-agent framework
+python -m uvicorn backend.main:app --reload

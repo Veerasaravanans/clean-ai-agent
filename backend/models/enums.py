@@ -80,3 +80,53 @@ class OCREngine(str, Enum):
     PADDLEOCR = "paddleocr"
     TESSERACT = "tesseract"
     AI_VISION = "ai_vision"
+
+
+class VerificationType(str, Enum):
+    """
+    Types of verification methods for test steps.
+    Determined by "Verification Type" column in Excel.
+    """
+    IMAGE = "image_verification"  # Full screen SSIM comparison (default)
+    OCR = "ocr"  # OCR text-only verification
+    PARTIAL_IMAGE = "partial_image"  # Cropped region SSIM comparison
+    NONE = "no_verification"  # Skip verification for this step
+
+    @classmethod
+    def from_excel_value(cls, value: str) -> "VerificationType":
+        """
+        Convert Excel column value to VerificationType.
+
+        Supported values:
+        - Full Image / Image: Compare full screenshot with reference image
+        - Partial Image / Cropped: Compare cropped region(s) with reference
+        - None / Skip: No verification for this step
+        - OCR / Text: Verify text is visible on screen
+
+        Args:
+            value: Raw Excel cell value
+
+        Returns:
+            VerificationType enum value
+        """
+        if not value:
+            return cls.IMAGE  # Default to full image verification
+
+        value_lower = value.lower().strip()
+
+        # Map Excel values to enum (order matters - check more specific first)
+        # OCR/Text verification
+        if "ocr" in value_lower or value_lower == "text":
+            return cls.OCR
+        # Partial/Cropped image verification (check before "image" to avoid matching "partial image")
+        elif "partial" in value_lower or "cropped" in value_lower or "region" in value_lower:
+            return cls.PARTIAL_IMAGE
+        # No verification
+        elif "no" in value_lower or "skip" in value_lower or "none" in value_lower:
+            return cls.NONE
+        # Full image verification (explicit or default)
+        elif "full" in value_lower or "image" in value_lower:
+            return cls.IMAGE
+        else:
+            # Default: full image verification
+            return cls.IMAGE

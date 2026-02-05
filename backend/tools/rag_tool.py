@@ -251,28 +251,39 @@ class RAGTool:
         steps: List[str],
         description: Optional[str] = None,
         expected: Optional[str] = None,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
+        step_verification_configs: Optional[List[Dict]] = None
     ) -> bool:
         """
         Add test case to vector database.
+
+        Args:
+            test_id: Unique test case identifier
+            title: Test case title
+            component: Component being tested
+            steps: List of step descriptions
+            description: Overall test description
+            expected: Expected result
+            metadata: Additional metadata
+            step_verification_configs: Per-step verification configurations
         """
         if not self.test_cases_collection:
             logger.error("❌ RAG not initialized")
             return False
-        
+
         try:
             # Check if already exists
             existing = self.test_cases_collection.get(ids=[test_id])
             if existing["ids"]:
                 # Update existing
                 pass  # Will be handled by upsert below
-            
+
             # Build document text for embedding
             doc_text = f"{title}. {description or ''} Component: {component}. Steps: {' '.join(steps)}"
-            
+
             # Generate embedding
             embedding = self.embedding_function.encode(doc_text).tolist()
-            
+
             # Prepare metadata
             meta = {
                 "test_id": test_id,
@@ -281,13 +292,15 @@ class RAGTool:
                 "description": description or "",
                 "expected": expected or "",
                 "step_count": len(steps),
+                "has_verification_configs": bool(step_verification_configs),
                 "created_at": datetime.now().isoformat()
             }
-            
+
             if metadata:
                 meta.update(metadata)
-            
+
             # Store in ChromaDB (upsert to handle updates)
+            # Include step_verification_configs in the document
             self.test_cases_collection.upsert(
                 ids=[test_id],
                 embeddings=[embedding],
@@ -297,14 +310,15 @@ class RAGTool:
                     "component": component,
                     "steps": steps,
                     "description": description,
-                    "expected": expected
+                    "expected": expected,
+                    "step_verification_configs": step_verification_configs or []
                 })],
                 metadatas=[meta]
             )
-            
+
             logger.debug(f"✅ Added/updated test case: {test_id}")
             return True
-            
+
         except Exception as e:
             logger.error(f"❌ Add test case error: {e}")
             return False
@@ -312,38 +326,47 @@ class RAGTool:
     def get_test_description(self, test_id: str) -> Optional[Dict]:
         """
         Retrieve test case by ID.
+
+        Returns:
+            Dict with test case data including step_verification_configs
         """
         if not self.test_cases_collection:
             logger.warning("⚠️ RAG not initialized - returning None")
             return None
-        
+
         try:
             result = self.test_cases_collection.get(
                 ids=[test_id],
                 include=["documents", "metadatas"]
             )
-            
+
             if not result["ids"]:
                 logger.warning(f"⚠️ Test case not found in database: {test_id}")
                 logger.info(f"   Available test cases: {self.test_cases_collection.count()}")
                 return None
-            
+
             # Parse document
             doc = json.loads(result["documents"][0])
-            
+
             logger.info(f"✅ Retrieved test case: {test_id}")
             logger.info(f"   Title: {doc['title']}")
             logger.info(f"   Steps: {len(doc['steps'])}")
-            
+
+            # Include verification configs if present
+            step_verification_configs = doc.get("step_verification_configs", [])
+            if step_verification_configs:
+                logger.info(f"   Verification configs: {len(step_verification_configs)} steps")
+
             return {
                 "test_id": doc["test_id"],
                 "title": doc["title"],
                 "component": doc["component"],
                 "description": doc.get("description", ""),
                 "steps": doc["steps"],
-                "expected": doc.get("expected", "")
+                "expected": doc.get("expected", ""),
+                "step_verification_configs": step_verification_configs
             }
-            
+
         except Exception as e:
             logger.error(f"❌ Get test error: {e}")
             return None
@@ -445,14 +468,15 @@ class RAGTool:
                         steps=test_case["steps"],
                         description=test_case.get("description", ""),
                         expected=test_case.get("expected", ""),
-                        metadata={"type": test_case.get("type", "Test Case")}
+                        metadata={"type": test_case.get("type", "Test Case")},
+                        step_verification_configs=test_case.get("step_verification_configs", [])
                     )
-                    
+
                     if success:
                         added += 1
                     else:
                         skipped += 1
-                        
+
                 except Exception as e:
                     logger.error(f"❌ Error indexing {test_case.get('test_id')}: {e}")
                     errors += 1

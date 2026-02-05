@@ -42,6 +42,15 @@ class AgentOrchestrator:
         self.current_execution_id: Optional[str] = None  # Track current execution for history
         self.execution_control = get_execution_control()  # Shared control for stop/pause
 
+        # Statistics tracking
+        self.statistics = {
+            "tests_executed": 0,
+            "tests_passed": 0,
+            "tests_failed": 0,
+            "commands_executed": 0
+        }
+        self._start_time = datetime.now()
+
         logger.info("✅ Agent Orchestrator initialized")
     
     # ═══════════════════════════════════════════════════════════════
@@ -172,6 +181,9 @@ class AgentOrchestrator:
                 )
                 logger.info(f"📊 Updated history record: {execution_record.execution_id} -> {final_status.value}")
 
+            # Update statistics
+            self.update_statistics(passed=success)
+
             self.current_execution_id = None
 
             return {
@@ -199,6 +211,9 @@ class AgentOrchestrator:
                     errors=[str(e)]
                 )
                 logger.info(f"📊 Updated history record with error: {execution_record.execution_id}")
+
+            # Update statistics for error case
+            self.update_statistics(passed=False)
 
             self.current_execution_id = None
 
@@ -606,13 +621,46 @@ class AgentOrchestrator:
     def get_learned_solutions(self) -> List[str]:
         """
         Get list of learned test IDs.
-        
+
         Returns:
             List of test IDs
         """
         # This would query RAG in production
         # For now, return placeholder
         return []
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        Get execution statistics.
+
+        Returns:
+            Dictionary with execution statistics
+        """
+        uptime = datetime.now() - self._start_time
+        hours, remainder = divmod(int(uptime.total_seconds()), 3600)
+        minutes, _ = divmod(remainder, 60)
+
+        return {
+            "uptime": f"{hours}h {minutes}m",
+            "tests_executed": self.statistics["tests_executed"],
+            "tests_passed": self.statistics["tests_passed"],
+            "tests_failed": self.statistics["tests_failed"],
+            "commands_executed": self.statistics["commands_executed"]
+        }
+
+    def update_statistics(self, passed: bool) -> None:
+        """
+        Update statistics after test completion.
+
+        Args:
+            passed: Whether the test passed
+        """
+        self.statistics["tests_executed"] += 1
+        if passed:
+            self.statistics["tests_passed"] += 1
+        else:
+            self.statistics["tests_failed"] += 1
+        logger.info(f"📊 Stats updated: {self.statistics}")
 
 
 # ═══════════════════════════════════════════════════════════════

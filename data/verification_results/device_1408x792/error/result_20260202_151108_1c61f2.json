@@ -1,0 +1,15 @@
+{
+  "result_id": "result_20260202_151108_1c61f2",
+  "device_id": "device_1408x792",
+  "test_id": "NAID-NEW-001",
+  "step_number": 2,
+  "step_description": "Step 2: Click on Settings application from the app launcher (Expected: Settings application should open displaying the main settings menu)",
+  "ssim_score": 0.6154755920871477,
+  "passed": false,
+  "threshold": 0.85,
+  "category": "error",
+  "timestamp": "2026-02-02T15:11:08.442808",
+  "reference_image": null,
+  "actual_image": "data\\screenshots\\screenshot_20260202_151058.jpg",
+  "comparison_image": "data\\verification_results\\device_1408x792\\error\\result_20260202_151108_1c61f2_comparison.png"
+}

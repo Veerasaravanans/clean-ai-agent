@@ -2,12 +2,18 @@
 verification_tool.py - Enhanced Verification Tool
 
 Screen comparison and verification with advanced OCR and AI Vision.
+
+DYNAMIC VERIFICATION SUPPORT:
+- Full screen SSIM comparison (default)
+- OCR text verification (check specified texts are present)
+- Partial image verification (cropped region SSIM comparison)
+- No verification (skip for specific steps)
 """
 
 import logging
 import os
 import base64
-from typing import Optional
+from typing import Optional, List, Dict, Any, Tuple
 from pathlib import Path
 from difflib import SequenceMatcher
 from datetime import datetime
@@ -19,6 +25,14 @@ from PIL import Image
 import requests
 
 from backend.models import ChangeResult
+from backend.models.enums import VerificationType
+from backend.models.results import (
+    StepVerificationConfig,
+    CropRegion,
+    OCRVerificationResult,
+    PartialImageVerificationResult,
+    DynamicVerificationResult
+)
 from backend.config import settings
 from backend.services.verification_image_service import get_verification_image_service
 
@@ -714,6 +728,171 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
             logger.debug(f"Failed to create comparison image: {e}")
             return None
 
+    def _create_partial_comparison_image(
+        self,
+        screenshot_path: str,
+        regions_results: List[Dict[str, Any]],
+        overall_ssim: float,
+        passed: bool,
+        device_id: Optional[str] = None
+    ) -> Optional[str]:
+        """
+        Create a comparison image showing all verified regions for partial image verification.
+
+        Args:
+            screenshot_path: Path to the full screenshot
+            regions_results: List of per-region verification results
+            overall_ssim: Overall SSIM score
+            passed: Whether overall verification passed
+            device_id: Device ID for reference image lookup
+
+        Returns:
+            Path to comparison image or None if failed
+        """
+        try:
+            # Load full screenshot
+            screenshot = cv2.imread(screenshot_path)
+            if screenshot is None:
+                return None
+
+            verification_service = get_verification_image_service()
+
+            # Get device_id if not provided
+            if not device_id:
+                from backend.tools.adb_tool import ADBTool
+                adb = ADBTool()
+                device_info = adb.get_device_info()
+                resolution = device_info.get("resolution", {})
+                device_id = verification_service.get_device_id(
+                    resolution.get("width", 0),
+                    resolution.get("height", 0)
+                )
+                logger.debug(f"Got device_id for comparison image: {device_id}")
+
+            # Determine layout based on number of regions
+            num_regions = len(regions_results)
+            if num_regions == 0:
+                return None
+
+            # Create comparison strips for each region
+            region_comparisons = []
+            max_height = 0
+
+            for region_result in regions_results:
+                region_name = region_result.get('region_name', 'unknown')
+                coords = region_result.get('coordinates', {})
+                similarity = region_result.get('similarity', 0)
+                region_passed = region_result.get('passed', False)
+
+                # Get crop coordinates
+                x1 = coords.get('x1', 0)
+                y1 = coords.get('y1', 0)
+                x2 = coords.get('x2', 0)
+                y2 = coords.get('y2', 0)
+
+                if x2 <= x1 or y2 <= y1:
+                    continue
+
+                # Crop actual region from screenshot
+                actual_crop = screenshot[y1:y2, x1:x2]
+                if actual_crop.size == 0:
+                    continue
+
+                # Get reference image - ensure correct name format
+                # Reference images are stored with _cropped suffix
+                reference_name = region_name if region_name.endswith('_cropped') else f"{region_name}_cropped"
+                reference_path = verification_service.get_cropped_verification_image(reference_name, device_id)
+
+                # Log for debugging
+                logger.debug(f"Looking for reference: {reference_name} in device {device_id}, found: {reference_path}")
+
+                if reference_path and reference_path.exists():
+                    reference_crop = cv2.imread(str(reference_path))
+                else:
+                    # Create placeholder if reference not found
+                    reference_crop = np.zeros_like(actual_crop)
+                    cv2.putText(reference_crop, "NO REF", (10, 30),
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+                if reference_crop is None:
+                    reference_crop = np.zeros_like(actual_crop)
+
+                # Resize to same dimensions
+                target_height = min(actual_crop.shape[0], 200)  # Cap height
+                scale = target_height / actual_crop.shape[0]
+                target_width = int(actual_crop.shape[1] * scale)
+
+                actual_resized = cv2.resize(actual_crop, (target_width, target_height))
+                reference_resized = cv2.resize(reference_crop, (target_width, target_height))
+
+                # Create side-by-side for this region
+                gap = 5
+                label_height = 25
+                region_width = target_width * 2 + gap
+                region_height = target_height + label_height
+
+                region_canvas = np.ones((region_height, region_width, 3), dtype=np.uint8) * 240
+
+                # Place images
+                region_canvas[label_height:, 0:target_width] = actual_resized
+                region_canvas[label_height:, target_width + gap:] = reference_resized
+
+                # Add label with region name and SSIM
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                status_color = (0, 128, 0) if region_passed else (0, 0, 255)
+                label_text = f"{region_name}: {similarity:.4f}"
+                cv2.putText(region_canvas, label_text, (5, 18), font, 0.5, status_color, 1)
+
+                # Add border based on pass/fail
+                border_color = (0, 255, 0) if region_passed else (0, 0, 255)
+                cv2.rectangle(region_canvas, (0, 0), (region_width - 1, region_height - 1), border_color, 2)
+
+                region_comparisons.append(region_canvas)
+                max_height = max(max_height, region_height)
+
+            if not region_comparisons:
+                return None
+
+            # Stack all region comparisons vertically
+            max_width = max(comp.shape[1] for comp in region_comparisons)
+
+            # Add header
+            header_height = 40
+            total_height = header_height + sum(comp.shape[0] for comp in region_comparisons) + (len(region_comparisons) - 1) * 5
+
+            canvas = np.ones((total_height, max_width, 3), dtype=np.uint8) * 255
+
+            # Add header
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            status_color = (0, 128, 0) if passed else (0, 0, 255)
+            header_text = f"Partial Verification: {overall_ssim:.4f} - {'PASS' if passed else 'FAIL'} ({num_regions} regions)"
+            cv2.putText(canvas, header_text, (10, 28), font, 0.6, status_color, 2)
+
+            # Stack region comparisons
+            y_offset = header_height
+            for comp in region_comparisons:
+                h, w = comp.shape[:2]
+                # Center horizontally if narrower
+                x_offset = (max_width - w) // 2
+                canvas[y_offset:y_offset + h, x_offset:x_offset + w] = comp
+                y_offset += h + 5
+
+            # Save comparison image
+            comparison_dir = Path("data/verification_comparisons")
+            comparison_dir.mkdir(parents=True, exist_ok=True)
+
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            comparison_path = comparison_dir / f"partial_comparison_{timestamp}.png"
+
+            cv2.imwrite(str(comparison_path), canvas)
+            logger.info(f"Created partial comparison image: {comparison_path}")
+
+            return str(comparison_path)
+
+        except Exception as e:
+            logger.error(f"Failed to create partial comparison image: {e}")
+            return None
+
     def verify_with_ssim(
         self,
         screenshot_path: str,
@@ -993,6 +1172,467 @@ Be strict - if the wrong screen opened or goal wasn't achieved, say NO."""
             }
         
         return results
+
+    # ═══════════════════════════════════════════════════════════
+    # DYNAMIC VERIFICATION SYSTEM
+    # ═══════════════════════════════════════════════════════════
+
+    def _extract_all_text(self, screenshot_path: str) -> str:
+        """
+        Extract all text from screenshot using multi-strategy OCR.
+
+        Args:
+            screenshot_path: Path to screenshot
+
+        Returns:
+            All detected text concatenated
+        """
+        all_texts = set()
+        strategies = ['standard', 'high_contrast', 'inverted']
+        psm_modes = [6, 11, 3]
+
+        for strategy in strategies:
+            preprocessed_path = self._preprocess_image_for_ocr(screenshot_path, preset=strategy)
+            try:
+                for psm in psm_modes:
+                    try:
+                        custom_config = f'--psm {psm} --oem 3'
+                        text = pytesseract.image_to_string(
+                            Image.open(preprocessed_path),
+                            config=custom_config
+                        )
+                        # Add non-empty lines
+                        for line in text.split('\n'):
+                            line = line.strip()
+                            if line:
+                                all_texts.add(line)
+                    except Exception:
+                        continue
+            finally:
+                self._cleanup_temp(preprocessed_path)
+
+        return '\n'.join(all_texts)
+
+    def verify_texts_on_screen(
+        self,
+        screenshot_path: str,
+        expected_texts: List[str],
+        match_threshold: float = 0.85
+    ) -> OCRVerificationResult:
+        """
+        Verify that ALL specified texts are present on screen.
+
+        Args:
+            screenshot_path: Path to screenshot
+            expected_texts: List of texts that must ALL be found
+            match_threshold: Fuzzy match threshold (0-1)
+
+        Returns:
+            OCRVerificationResult with detailed results
+        """
+        logger.info(f"🔍 OCR Verification: Checking {len(expected_texts)} texts")
+
+        # Extract all text from screen
+        all_detected_text = self._extract_all_text(screenshot_path)
+        detected_lower = all_detected_text.lower()
+
+        found_texts = []
+        missing_texts = []
+
+        for expected in expected_texts:
+            expected_lower = expected.lower().strip()
+
+            # Try exact match first
+            if expected_lower in detected_lower:
+                found_texts.append(expected)
+                logger.debug(f"  ✓ Found (exact): '{expected}'")
+                continue
+
+            # Try fuzzy match on each detected line
+            found = False
+            for line in all_detected_text.split('\n'):
+                line_lower = line.lower().strip()
+                similarity = SequenceMatcher(None, expected_lower, line_lower).ratio()
+                if similarity >= match_threshold:
+                    found_texts.append(expected)
+                    found = True
+                    logger.debug(f"  ✓ Found (fuzzy {similarity:.2f}): '{expected}'")
+                    break
+
+            if not found:
+                missing_texts.append(expected)
+                logger.warning(f"  ✗ Missing: '{expected}'")
+
+        # All texts must be found for pass
+        passed = len(missing_texts) == 0
+        confidence = len(found_texts) / len(expected_texts) * 100 if expected_texts else 100
+
+        if passed:
+            logger.info(f"✅ OCR Verification PASSED: All {len(expected_texts)} texts found")
+        else:
+            logger.warning(f"❌ OCR Verification FAILED: {len(missing_texts)} texts missing")
+
+        return OCRVerificationResult(
+            passed=passed,
+            expected_texts=expected_texts,
+            found_texts=found_texts,
+            missing_texts=missing_texts,
+            all_detected_text=all_detected_text,
+            confidence=confidence
+        )
+
+    def verify_cropped_region(
+        self,
+        screenshot_path: str,
+        region: CropRegion,
+        reference_image_name: str,
+        similarity_threshold: float = 0.85,
+        device_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Verify a cropped region of screenshot against reference.
+
+        Args:
+            screenshot_path: Path to full screenshot
+            region: CropRegion with coordinates
+            reference_image_name: Name of cropped reference image
+            similarity_threshold: SSIM threshold
+            device_id: Device identifier for reference lookup
+
+        Returns:
+            Dict with verification result
+        """
+        logger.info(f"🔍 Verifying cropped region: {region.name}")
+
+        try:
+            # Load screenshot
+            screenshot = cv2.imread(screenshot_path)
+            if screenshot is None:
+                return {
+                    'passed': False,
+                    'region_name': region.name,
+                    'similarity': 0.0,
+                    'message': 'Failed to load screenshot'
+                }
+
+            # Crop the region
+            cropped = screenshot[region.y1:region.y2, region.x1:region.x2]
+
+            if cropped.size == 0:
+                return {
+                    'passed': False,
+                    'region_name': region.name,
+                    'similarity': 0.0,
+                    'message': f'Invalid crop region: {region.to_dict()}'
+                }
+
+            # Get reference image
+            verification_service = get_verification_image_service()
+
+            if not device_id:
+                # Get device ID from ADB
+                from backend.tools.adb_tool import ADBTool
+                adb = ADBTool()
+                device_info = adb.get_device_info()
+                resolution = device_info.get("resolution", {})
+                device_id = verification_service.get_device_id(
+                    resolution.get("width", 0),
+                    resolution.get("height", 0)
+                )
+
+            reference_path = verification_service.get_cropped_verification_image(
+                reference_image_name,
+                device_id
+            )
+
+            if not reference_path or not reference_path.exists():
+                return {
+                    'passed': False,
+                    'region_name': region.name,
+                    'similarity': 0.0,
+                    'message': f'Reference image not found: {reference_image_name}'
+                }
+
+            # Load reference
+            reference = cv2.imread(str(reference_path))
+            if reference is None:
+                return {
+                    'passed': False,
+                    'region_name': region.name,
+                    'similarity': 0.0,
+                    'message': 'Failed to load reference image'
+                }
+
+            # Resize cropped to match reference if needed
+            if cropped.shape != reference.shape:
+                cropped = cv2.resize(cropped, (reference.shape[1], reference.shape[0]))
+
+            # Convert to grayscale
+            gray_cropped = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+            gray_reference = cv2.cvtColor(reference, cv2.COLOR_BGR2GRAY)
+
+            # Calculate SSIM
+            if SSIM_AVAILABLE:
+                similarity_score = ssim(gray_cropped, gray_reference)
+            else:
+                # Fallback to simple pixel comparison
+                diff = cv2.absdiff(gray_cropped, gray_reference)
+                similarity_score = 1 - (np.count_nonzero(diff > 30) / diff.size)
+
+            passed = similarity_score >= similarity_threshold
+
+            if passed:
+                logger.info(f"  ✓ Region '{region.name}': SSIM {similarity_score:.4f}")
+            else:
+                logger.warning(f"  ✗ Region '{region.name}': SSIM {similarity_score:.4f} < {similarity_threshold}")
+
+            return {
+                'passed': passed,
+                'region_name': region.name,
+                'similarity': float(similarity_score),
+                'threshold': similarity_threshold,
+                'coordinates': region.to_dict(),
+                'message': f'SSIM: {similarity_score:.4f}'
+            }
+
+        except Exception as e:
+            logger.error(f"Cropped region verification error: {e}")
+            return {
+                'passed': False,
+                'region_name': region.name,
+                'similarity': 0.0,
+                'message': f'Error: {str(e)}'
+            }
+
+    def verify_multiple_regions(
+        self,
+        screenshot_path: str,
+        regions: List[CropRegion],
+        similarity_threshold: float = 0.85,
+        device_id: Optional[str] = None
+    ) -> PartialImageVerificationResult:
+        """
+        Verify multiple cropped regions - ALL must pass.
+
+        Args:
+            screenshot_path: Path to screenshot
+            regions: List of CropRegion to verify
+            similarity_threshold: SSIM threshold
+            device_id: Device identifier
+
+        Returns:
+            PartialImageVerificationResult
+        """
+        logger.info(f"🔍 Partial Image Verification: {len(regions)} regions")
+
+        regions_results = []
+        failed_regions = []
+        total_ssim = 0.0
+
+        for region in regions:
+            # Use region name as reference image name
+            # Don't add _cropped suffix if name already ends with it
+            if region.name.lower().endswith('_cropped'):
+                reference_name = region.name
+            else:
+                reference_name = f"{region.name}_cropped"
+
+            result = self.verify_cropped_region(
+                screenshot_path,
+                region,
+                reference_name,
+                similarity_threshold,
+                device_id
+            )
+
+            regions_results.append(result)
+            total_ssim += result.get('similarity', 0)
+
+            if not result['passed']:
+                failed_regions.append(region.name)
+
+        # ALL regions must pass
+        passed = len(failed_regions) == 0
+        overall_ssim = total_ssim / len(regions) if regions else 0.0
+
+        if passed:
+            logger.info(f"✅ Partial Image Verification PASSED: All {len(regions)} regions match")
+        else:
+            logger.warning(f"❌ Partial Image Verification FAILED: {len(failed_regions)} regions failed")
+
+        # Create comparison image for partial verification
+        comparison_image_path = self._create_partial_comparison_image(
+            screenshot_path,
+            regions_results,
+            overall_ssim,
+            passed,
+            device_id
+        )
+
+        return PartialImageVerificationResult(
+            passed=passed,
+            regions_results=regions_results,
+            overall_ssim=overall_ssim,
+            failed_regions=failed_regions,
+            comparison_image=comparison_image_path
+        )
+
+    def dynamic_verification(
+        self,
+        screenshot_path: str,
+        config: StepVerificationConfig,
+        reference_image_name: Optional[str] = None,
+        test_id: Optional[str] = None,
+        step_number: int = 0,
+        step_description: str = ""
+    ) -> DynamicVerificationResult:
+        """
+        MAIN DISPATCHER: Perform verification based on config type.
+
+        This is the primary entry point for the dynamic verification system.
+        Automatically routes to the appropriate verification method based on
+        the verification type specified in the Excel test case.
+
+        Args:
+            screenshot_path: Path to current screenshot
+            config: StepVerificationConfig from Excel
+            reference_image_name: Default reference image name (if not in config)
+            test_id: Test case ID for tracking
+            step_number: Step number
+            step_description: Step description
+
+        Returns:
+            DynamicVerificationResult with unified results
+        """
+        v_type = config.verification_type
+
+        logger.info(f"🔍 Dynamic Verification: Type={v_type.value}")
+
+        # ═══ NO VERIFICATION ═══
+        if v_type == VerificationType.NONE:
+            logger.info("⏭️ Verification skipped (No verification type)")
+            return DynamicVerificationResult(
+                passed=True,
+                verification_type=v_type,
+                message="Verification skipped as configured",
+                screenshot_path=screenshot_path
+            )
+
+        # ═══ OCR VERIFICATION ═══
+        if v_type == VerificationType.OCR:
+            if not config.expected_texts:
+                logger.warning("⚠️ OCR verification but no expected texts specified")
+                return DynamicVerificationResult(
+                    passed=True,
+                    verification_type=v_type,
+                    message="No expected texts specified - passing by default",
+                    screenshot_path=screenshot_path
+                )
+
+            ocr_result = self.verify_texts_on_screen(
+                screenshot_path,
+                config.expected_texts
+            )
+
+            return DynamicVerificationResult(
+                passed=ocr_result.passed,
+                verification_type=v_type,
+                message=f"OCR: {len(ocr_result.found_texts)}/{len(config.expected_texts)} texts found",
+                ocr_result=ocr_result,
+                screenshot_path=screenshot_path
+            )
+
+        # ═══ PARTIAL IMAGE VERIFICATION ═══
+        if v_type == VerificationType.PARTIAL_IMAGE:
+            if not config.crop_regions:
+                logger.warning("⚠️ Partial image verification but no regions specified")
+                return DynamicVerificationResult(
+                    passed=True,
+                    verification_type=v_type,
+                    message="No crop regions specified - passing by default",
+                    screenshot_path=screenshot_path
+                )
+
+            threshold = config.ssim_threshold or 0.85
+            partial_result = self.verify_multiple_regions(
+                screenshot_path,
+                config.crop_regions,
+                threshold
+            )
+
+            # Save partial verification result to history
+            result_id = None
+            try:
+                verification_service = get_verification_image_service()
+                # Get device ID
+                from backend.tools.adb_tool import ADBTool
+                adb = ADBTool()
+                device_info = adb.get_device_info()
+                resolution = device_info.get("resolution", {})
+                device_id = verification_service.get_device_id(
+                    resolution.get("width", 0),
+                    resolution.get("height", 0)
+                )
+
+                actual_test_id = test_id or f"partial_verification_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                result_id = verification_service.save_verification_result(
+                    device_id=device_id,
+                    test_id=actual_test_id,
+                    step_number=step_number,
+                    step_description=step_description or f"Partial verification ({len(config.crop_regions)} regions)",
+                    ssim_score=float(partial_result.overall_ssim),
+                    passed=partial_result.passed,
+                    reference_image_path=None,
+                    actual_image_path=screenshot_path,
+                    comparison_image_path=partial_result.comparison_image,
+                    threshold=threshold
+                )
+            except Exception as save_err:
+                logger.warning(f"Failed to save partial verification result: {save_err}")
+
+            return DynamicVerificationResult(
+                passed=partial_result.passed,
+                verification_type=v_type,
+                message=f"Partial: {len(config.crop_regions) - len(partial_result.failed_regions)}/{len(config.crop_regions)} regions passed",
+                partial_result=partial_result,
+                screenshot_path=screenshot_path,
+                comparison_image_path=partial_result.comparison_image,
+                result_id=result_id
+            )
+
+        # ═══ FULL IMAGE VERIFICATION (Default) ═══
+        # Use reference image name from config or default
+        ref_name = config.reference_image_name or reference_image_name
+
+        if not ref_name:
+            logger.warning("⚠️ Full image verification but no reference image name")
+            return DynamicVerificationResult(
+                passed=True,
+                verification_type=v_type,
+                message="No reference image specified - passing by default",
+                screenshot_path=screenshot_path
+            )
+
+        threshold = config.ssim_threshold or 0.85
+        ssim_result = self.verify_with_ssim(
+            screenshot_path,
+            ref_name,
+            threshold,
+            test_id=test_id,
+            step_number=step_number,
+            step_description=step_description
+        )
+
+        return DynamicVerificationResult(
+            passed=ssim_result['passed'],
+            verification_type=v_type,
+            message=ssim_result['message'],
+            ssim_result=ssim_result,
+            screenshot_path=screenshot_path,
+            comparison_image_path=ssim_result.get('comparison_image'),
+            result_id=ssim_result.get('result_id')
+        )
+
 
 # Singleton instance
 _verification_tool_instance = None

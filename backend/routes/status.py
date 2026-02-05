@@ -69,27 +69,21 @@ async def get_device_info():
 @router.get("/statistics", response_model=StatisticsResponse)
 async def get_statistics():
     """
-    Get system statistics.
-    
+    Get system statistics from orchestrator.
+
     Returns:
         StatisticsResponse with metrics
     """
     try:
-        # Placeholder statistics
-        stats = {
-            "uptime": "0h 0m",
-            "tests_executed": 0,
-            "tests_passed": 0,
-            "tests_failed": 0,
-            "commands_executed": 0
-        }
-        
+        orchestrator = get_orchestrator()
+        stats = orchestrator.get_statistics()
+
         return StatisticsResponse(
             success=True,
             message="Statistics retrieved",
             data=stats
         )
-    
+
     except Exception as e:
         logger.error(f"❌ Get statistics error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

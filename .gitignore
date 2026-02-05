@@ -98,3 +98,4 @@ tmp/
 *.pyo
 *.bak
 .claude/
+CLAUDE.md
