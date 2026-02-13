@@ -1,6 +1,671 @@
 {
   "executions": [
     {
+      "execution_id": "exec_20260212_145606_89ba2a7e",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-12T14:56:06.232641",
+      "completed_at": "2026-02-12T14:56:46.825165"
+    },
+    {
+      "execution_id": "exec_20260212_113742_feb383ce",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-12T11:37:42.201878",
+      "completed_at": "2026-02-12T11:38:14.945600"
+    },
+    {
+      "execution_id": "exec_20260212_112403_a43977cb",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-12T11:24:03.024713",
+      "completed_at": "2026-02-12T11:24:38.036482"
+    },
+    {
+      "execution_id": "exec_20260212_110632_932c9712",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-12T11:06:32.464545",
+      "completed_at": "2026-02-12T11:07:14.921730"
+    },
+    {
+      "execution_id": "exec_20260212_110421_bc982052",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-12T11:04:21.566060",
+      "completed_at": "2026-02-12T11:05:13.109725"
+    },
+    {
+      "execution_id": "exec_20260212_110217_c9713a05",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-12T11:02:17.321865",
+      "completed_at": "2026-02-12T11:03:24.735959"
+    },
+    {
+      "execution_id": "exec_20260211_164708_e3a47c7d",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-11T16:47:08.380877",
+      "completed_at": "2026-02-11T16:47:39.364620"
+    },
+    {
+      "execution_id": "exec_20260211_161853_9e04c3a1",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T16:18:53.961709",
+      "completed_at": "2026-02-11T16:19:41.901384"
+    },
+    {
+      "execution_id": "exec_20260211_161335_b5784b39",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T16:13:35.251446",
+      "completed_at": "2026-02-11T16:14:22.842698"
+    },
+    {
+      "execution_id": "exec_20260211_161217_d2c5a94f",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T16:12:17.280895",
+      "completed_at": "2026-02-11T16:13:18.323746"
+    },
+    {
+      "execution_id": "exec_20260211_161010_ec98586b",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T16:10:10.071690",
+      "completed_at": "2026-02-11T16:11:06.535302"
+    },
+    {
+      "execution_id": "exec_20260211_155820_98bc35b5",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:58:20.705018",
+      "completed_at": "2026-02-11T15:59:21.808427"
+    },
+    {
+      "execution_id": "exec_20260211_155456_bc48d62e",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:54:56.099238",
+      "completed_at": "2026-02-11T15:55:58.284111"
+    },
+    {
+      "execution_id": "exec_20260211_155210_f0f9638d",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:52:10.174216",
+      "completed_at": "2026-02-11T15:53:03.053827"
+    },
+    {
+      "execution_id": "exec_20260211_155023_baf8641a",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:50:23.366978",
+      "completed_at": "2026-02-11T15:51:28.324329"
+    },
+    {
+      "execution_id": "exec_20260211_154808_fd4d1391",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:48:08.492501",
+      "completed_at": "2026-02-11T15:49:00.230396"
+    },
+    {
+      "execution_id": "exec_20260211_152901_6b22b0c2",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:29:01.148226",
+      "completed_at": "2026-02-11T15:29:57.046767"
+    },
+    {
+      "execution_id": "exec_20260211_152619_c6af2412",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:26:19.376189",
+      "completed_at": "2026-02-11T15:27:25.628826"
+    },
+    {
+      "execution_id": "exec_20260211_152205_188208ad",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:22:05.444583",
+      "completed_at": "2026-02-11T15:23:22.673626"
+    },
+    {
+      "execution_id": "exec_20260211_152009_ad78eb01",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:20:09.828671",
+      "completed_at": "2026-02-11T15:21:13.220982"
+    },
+    {
+      "execution_id": "exec_20260211_151743_4d4067a4",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:17:43.301661",
+      "completed_at": "2026-02-11T15:18:47.446589"
+    },
+    {
+      "execution_id": "exec_20260211_151627_b13038c7",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:16:27.573613",
+      "completed_at": "2026-02-11T15:16:40.313640"
+    },
+    {
+      "execution_id": "exec_20260211_151318_180212f0",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-11T15:13:18.745937",
+      "completed_at": "2026-02-11T15:14:22.005420"
+    },
+    {
+      "execution_id": "exec_20260211_144553_5f128080",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-11T14:45:53.977319",
+      "completed_at": "2026-02-11T14:46:59.135635"
+    },
+    {
+      "execution_id": "exec_20260210_122931_26af8f9c",
+      "test_id": "NAID-NEW-010",
+      "status": "success",
+      "started_at": "2026-02-10T12:29:31.448393",
+      "completed_at": "2026-02-10T12:29:35.034156"
+    },
+    {
+      "execution_id": "exec_20260210_122837_12fd312d",
+      "test_id": "NAID-NEW-010",
+      "status": "success",
+      "started_at": "2026-02-10T12:28:37.624271",
+      "completed_at": "2026-02-10T12:28:52.061787"
+    },
+    {
+      "execution_id": "exec_20260210_122608_57bd1001",
+      "test_id": "NAID-NEW-010",
+      "status": "success",
+      "started_at": "2026-02-10T12:26:08.987218",
+      "completed_at": "2026-02-10T12:26:26.415696"
+    },
+    {
+      "execution_id": "exec_20260210_122547_8b0eee78",
+      "test_id": "NAID-NEW-010",
+      "status": "success",
+      "started_at": "2026-02-10T12:25:47.618838",
+      "completed_at": "2026-02-10T12:26:01.442047"
+    },
+    {
+      "execution_id": "exec_20260210_122311_b09ea9d9",
+      "test_id": "NAID-NEW-010",
+      "status": "failure",
+      "started_at": "2026-02-10T12:23:11.129770",
+      "completed_at": "2026-02-10T12:25:29.809878"
+    },
+    {
+      "execution_id": "exec_20260210_122107_f989ebac",
+      "test_id": "NAID-NEW-010",
+      "status": "success",
+      "started_at": "2026-02-10T12:21:07.723753",
+      "completed_at": "2026-02-10T12:21:58.491591"
+    },
+    {
+      "execution_id": "exec_20260209_161115_2e74e47c",
+      "test_id": "NAID-NEW-010",
+      "status": "success",
+      "started_at": "2026-02-09T16:11:15.152048",
+      "completed_at": "2026-02-09T16:11:56.177532"
+    },
+    {
+      "execution_id": "exec_20260209_123033_8958e972",
+      "test_id": "NAID-NEW-009",
+      "status": "success",
+      "started_at": "2026-02-09T12:30:33.105191",
+      "completed_at": "2026-02-09T12:30:56.722866"
+    },
+    {
+      "execution_id": "exec_20260209_120823_e4300851",
+      "test_id": "NAID-NEW-009",
+      "status": "success",
+      "started_at": "2026-02-09T12:08:23.275702",
+      "completed_at": "2026-02-09T12:08:57.870615"
+    },
+    {
+      "execution_id": "exec_20260209_120739_c30187bb",
+      "test_id": "NAID-NEW-009",
+      "status": "success",
+      "started_at": "2026-02-09T12:07:39.254475",
+      "completed_at": "2026-02-09T12:08:08.052983"
+    },
+    {
+      "execution_id": "exec_20260209_120155_b5534f7e",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T12:01:55.017240",
+      "completed_at": "2026-02-09T12:02:53.701360"
+    },
+    {
+      "execution_id": "exec_20260209_115824_7cc3e5d1",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T11:58:24.909543",
+      "completed_at": "2026-02-09T11:59:26.767758"
+    },
+    {
+      "execution_id": "exec_20260209_115637_42382941",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T11:56:37.514503",
+      "completed_at": "2026-02-09T11:57:35.684203"
+    },
+    {
+      "execution_id": "exec_20260209_115518_7877f6ac",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-09T11:55:18.583513",
+      "completed_at": "2026-02-09T11:56:03.910893"
+    },
+    {
+      "execution_id": "exec_20260209_110834_2d3d5c98",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T11:08:34.723021",
+      "completed_at": "2026-02-09T11:08:44.678632"
+    },
+    {
+      "execution_id": "exec_20260209_105850_c90b58ec",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T10:58:50.578786",
+      "completed_at": "2026-02-09T10:59:00.133229"
+    },
+    {
+      "execution_id": "exec_20260209_104203_aa8f23a1",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T10:42:03.118944",
+      "completed_at": "2026-02-09T10:43:13.613861"
+    },
+    {
+      "execution_id": "exec_20260209_102652_5262a0f9",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T10:26:52.344404",
+      "completed_at": "2026-02-09T10:28:04.568477"
+    },
+    {
+      "execution_id": "exec_20260209_100629_a0807a87",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T10:06:29.641983",
+      "completed_at": "2026-02-09T10:06:39.443050"
+    },
+    {
+      "execution_id": "exec_20260209_100452_778ce80d",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T10:04:52.131037",
+      "completed_at": "2026-02-09T10:06:03.637363"
+    },
+    {
+      "execution_id": "exec_20260209_093758_8da845a0",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-09T09:37:58.728237",
+      "completed_at": "2026-02-09T09:38:11.390949"
+    },
+    {
+      "execution_id": "exec_20260208_162146_d439acf8",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T16:21:46.709851",
+      "completed_at": "2026-02-08T16:22:00.247310"
+    },
+    {
+      "execution_id": "exec_20260208_154446_23cdd1b2",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T15:44:46.857667",
+      "completed_at": "2026-02-08T15:46:10.030548"
+    },
+    {
+      "execution_id": "exec_20260208_145627_c59eb355",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:56:27.732501",
+      "completed_at": "2026-02-08T14:56:39.925409"
+    },
+    {
+      "execution_id": "exec_20260208_145500_7bf36c78",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:55:00.432654",
+      "completed_at": "2026-02-08T14:56:14.530830"
+    },
+    {
+      "execution_id": "exec_20260208_143435_69998de0",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:34:35.453875",
+      "completed_at": "2026-02-08T14:34:46.127044"
+    },
+    {
+      "execution_id": "exec_20260208_143302_d3801e63",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:33:02.361913",
+      "completed_at": "2026-02-08T14:34:20.796892"
+    },
+    {
+      "execution_id": "exec_20260208_141028_c7274c7d",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:10:28.131230",
+      "completed_at": "2026-02-08T14:10:40.660946"
+    },
+    {
+      "execution_id": "exec_20260208_141009_f1e18c1d",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:10:09.464426",
+      "completed_at": "2026-02-08T14:10:22.235983"
+    },
+    {
+      "execution_id": "exec_20260208_140847_e970e463",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T14:08:47.631763",
+      "completed_at": "2026-02-08T14:10:04.439947"
+    },
+    {
+      "execution_id": "exec_20260208_124322_0ed1a214",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T12:43:22.303162",
+      "completed_at": "2026-02-08T12:43:33.731802"
+    },
+    {
+      "execution_id": "exec_20260208_124158_7c7aff49",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T12:41:58.897533",
+      "completed_at": "2026-02-08T12:43:09.274780"
+    },
+    {
+      "execution_id": "exec_20260208_120807_59190f85",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-08T12:08:07.548273",
+      "completed_at": "2026-02-08T12:09:01.745442"
+    },
+    {
+      "execution_id": "exec_20260208_120006_c1ba9b0b",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-08T12:00:06.512457",
+      "completed_at": "2026-02-08T12:01:07.579734"
+    },
+    {
+      "execution_id": "exec_20260208_114621_98a76b4e",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T11:46:21.811080",
+      "completed_at": "2026-02-08T11:46:30.474467"
+    },
+    {
+      "execution_id": "exec_20260208_114332_bbcb6637",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T11:43:32.705789",
+      "completed_at": "2026-02-08T11:43:42.627854"
+    },
+    {
+      "execution_id": "exec_20260208_114126_8518c32f",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T11:41:26.684041",
+      "completed_at": "2026-02-08T11:42:36.486671"
+    },
+    {
+      "execution_id": "exec_20260208_113059_74f005df",
+      "test_id": "NAID-NEW-001",
+      "status": "error",
+      "started_at": "2026-02-08T11:30:59.700887",
+      "completed_at": "2026-02-08T11:31:05.740284"
+    },
+    {
+      "execution_id": "exec_20260208_112122_63c1ba89",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T11:21:22.046170",
+      "completed_at": "2026-02-08T11:22:54.306470"
+    },
+    {
+      "execution_id": "exec_20260208_111807_76378b5a",
+      "test_id": "NAID-NEW-001",
+      "status": "error",
+      "started_at": "2026-02-08T11:18:07.101998",
+      "completed_at": "2026-02-08T11:18:11.802966"
+    },
+    {
+      "execution_id": "exec_20260208_111508_b9b7a88d",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T11:15:08.598848",
+      "completed_at": "2026-02-08T11:16:33.394479"
+    },
+    {
+      "execution_id": "exec_20260208_111315_cb5c984a",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-08T11:13:15.226573",
+      "completed_at": "2026-02-08T11:14:42.583419"
+    },
+    {
+      "execution_id": "exec_20260206_172943_abd699c0",
+      "test_id": "NAID-NEW-008",
+      "status": "success",
+      "started_at": "2026-02-06T17:29:43.324952",
+      "completed_at": "2026-02-06T17:31:14.082714"
+    },
+    {
+      "execution_id": "exec_20260206_172815_b91fd8d8",
+      "test_id": "NAID-NEW-008",
+      "status": "success",
+      "started_at": "2026-02-06T17:28:15.748178",
+      "completed_at": "2026-02-06T17:29:35.812971"
+    },
+    {
+      "execution_id": "exec_20260206_170625_25cbfc74",
+      "test_id": "NAID-NEW-008",
+      "status": "success",
+      "started_at": "2026-02-06T17:06:25.177581",
+      "completed_at": "2026-02-06T17:07:15.473122"
+    },
+    {
+      "execution_id": "exec_20260206_164601_cd8a5951",
+      "test_id": "NAID-NEW-008",
+      "status": "success",
+      "started_at": "2026-02-06T16:46:01.341008",
+      "completed_at": "2026-02-06T16:46:56.253182"
+    },
+    {
+      "execution_id": "exec_20260206_164454_9353a124",
+      "test_id": "NAID-NEW-008",
+      "status": "success",
+      "started_at": "2026-02-06T16:44:54.534224",
+      "completed_at": "2026-02-06T16:45:45.780149"
+    },
+    {
+      "execution_id": "exec_20260206_164129_10d7b23d",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T16:41:29.517788",
+      "completed_at": "2026-02-06T16:43:07.203269"
+    },
+    {
+      "execution_id": "exec_20260206_163255_b7ece987",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T16:32:55.269476",
+      "completed_at": "2026-02-06T16:34:24.598451"
+    },
+    {
+      "execution_id": "exec_20260206_162309_f6d1e725",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T16:23:09.987961",
+      "completed_at": "2026-02-06T16:24:31.842947"
+    },
+    {
+      "execution_id": "exec_20260206_160550_8f804993",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T16:05:50.370201",
+      "completed_at": "2026-02-06T16:07:06.245919"
+    },
+    {
+      "execution_id": "exec_20260206_155547_e8072d4a",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T15:55:47.293867",
+      "completed_at": "2026-02-06T15:57:12.780870"
+    },
+    {
+      "execution_id": "exec_20260206_155322_56f47078",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T15:53:22.468813",
+      "completed_at": "2026-02-06T15:54:37.096490"
+    },
+    {
+      "execution_id": "exec_20260206_153727_f69fd9a6",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T15:37:27.941210",
+      "completed_at": "2026-02-06T15:38:40.362959"
+    },
+    {
+      "execution_id": "exec_20260206_153602_2d0212bd",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T15:36:02.273538",
+      "completed_at": "2026-02-06T15:37:18.306330"
+    },
+    {
+      "execution_id": "exec_20260206_151712_260a3673",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T15:17:12.097240",
+      "completed_at": "2026-02-06T15:18:25.268129"
+    },
+    {
+      "execution_id": "exec_20260206_145842_d3a495d6",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T14:58:42.703448",
+      "completed_at": "2026-02-06T14:59:56.658359"
+    },
+    {
+      "execution_id": "exec_20260206_145715_8ad96293",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T14:57:15.136126",
+      "completed_at": "2026-02-06T14:58:25.992685"
+    },
+    {
+      "execution_id": "exec_20260206_131600_f9ff5030",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T13:16:00.214570",
+      "completed_at": "2026-02-06T13:16:51.714603"
+    },
+    {
+      "execution_id": "exec_20260206_124727_4becd3ea",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T12:47:27.036190",
+      "completed_at": "2026-02-06T12:48:17.376971"
+    },
+    {
+      "execution_id": "exec_20260206_124417_162508a3",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T12:44:17.265138",
+      "completed_at": "2026-02-06T12:45:17.269178"
+    },
+    {
+      "execution_id": "exec_20260206_124133_b675d830",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T12:41:33.348355",
+      "completed_at": "2026-02-06T12:42:37.910199"
+    },
+    {
+      "execution_id": "exec_20260206_123957_010ebd99",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T12:39:57.237512",
+      "completed_at": "2026-02-06T12:41:00.345821"
+    },
+    {
+      "execution_id": "exec_20260206_123942_63e41813",
+      "test_id": "NAID-NEW-001",
+      "status": "error",
+      "started_at": "2026-02-06T12:39:42.306464",
+      "completed_at": "2026-02-06T12:39:51.297978"
+    },
+    {
+      "execution_id": "exec_20260206_114633_686d1c87",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T11:46:33.856275",
+      "completed_at": "2026-02-06T11:46:54.660429"
+    },
+    {
+      "execution_id": "exec_20260206_114608_1c0a7fa0",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T11:46:08.970908",
+      "completed_at": "2026-02-06T11:46:25.013223"
+    },
+    {
+      "execution_id": "exec_20260206_114435_56b47bb3",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T11:44:35.707949",
+      "completed_at": "2026-02-06T11:45:27.802143"
+    },
+    {
+      "execution_id": "exec_20260206_114418_a02d53c4",
+      "test_id": "NAID-NEW-001",
+      "status": "error",
+      "started_at": "2026-02-06T11:44:18.363413",
+      "completed_at": "2026-02-06T11:44:23.271352"
+    },
+    {
+      "execution_id": "exec_20260206_093952_6811657c",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T09:39:52.893263",
+      "completed_at": "2026-02-06T09:41:02.208343"
+    },
+    {
+      "execution_id": "exec_20260206_093406_7647e3bf",
+      "test_id": "NAID-NEW-001",
+      "status": "failure",
+      "started_at": "2026-02-06T09:34:06.603947",
+      "completed_at": "2026-02-06T09:35:49.056276"
+    },
+    {
+      "execution_id": "exec_20260206_093329_00f138d3",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-02-06T09:33:29.403703",
+      "completed_at": "2026-02-06T09:33:43.169427"
+    },
+    {
       "execution_id": "exec_20260205_122041_6d23c51e",
       "test_id": "NAID-NEW-001",
       "status": "failure",

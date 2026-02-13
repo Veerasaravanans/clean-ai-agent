@@ -13,7 +13,8 @@ from backend.models.enums import (
     VerificationEngineStatus,
     LogLevel,
     OCREngine,
-    VerificationType
+    VerificationType,
+    ErrorCategory  # HITL Architecture Fix
 )
 from backend.models.learned_solution import LearnedSolution, LearnedStep, LearnedSolutionStats
 from backend.models.results import (
@@ -108,6 +109,7 @@ __all__ = [
     "LogLevel",
     "OCREngine",
     "VerificationType",
+    "ErrorCategory",  # HITL Architecture Fix
 
     # Learned Solutions
     "LearnedSolution",

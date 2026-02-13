@@ -197,8 +197,11 @@ class RAGTool:
             logger.warning(f"⚠️ Test cases directory not found: {self.test_cases_dir}")
             return
         
-        # Find all Excel files
-        excel_files = list(self.test_cases_dir.glob("*.xlsx")) + list(self.test_cases_dir.glob("*.xls"))
+        # Find all Excel files (skip temp/lock files starting with ~$)
+        excel_files = [
+            f for f in (list(self.test_cases_dir.glob("*.xlsx")) + list(self.test_cases_dir.glob("*.xls")))
+            if not f.name.startswith("~$")
+        ]
         
         if not excel_files:
             logger.info("ℹ️ No Excel files found in test cases directory")
@@ -234,10 +237,35 @@ class RAGTool:
         if not self._initialized:
             logger.warning("⚠️ RAG not initialized")
             return
-        
+
         logger.info("🔄 Refreshing test case index...")
         self._auto_index_new_files()
         logger.info(f"✅ Index refreshed. Total test cases: {self.test_cases_collection.count()}")
+
+    def force_reindex_all(self):
+        """
+        Force re-index ALL Excel files (clears indexed files tracking).
+        Use after schema changes (e.g., adding cleanup configs).
+        """
+        if not self._initialized:
+            logger.warning("⚠️ RAG not initialized")
+            return
+
+        logger.info("🔄 Force re-indexing ALL Excel files...")
+
+        # Clear indexed files tracking
+        if self.indexed_files_collection:
+            try:
+                all_indexed = self.indexed_files_collection.get()
+                if all_indexed["ids"]:
+                    self.indexed_files_collection.delete(ids=all_indexed["ids"])
+                    logger.info(f"   Cleared {len(all_indexed['ids'])} indexed file records")
+            except Exception as e:
+                logger.error(f"   Error clearing indexed files: {e}")
+
+        # Re-index all files
+        self._auto_index_new_files()
+        logger.info(f"✅ Force re-index complete. Total test cases: {self.test_cases_collection.count()}")
     
     # ═══════════════════════════════════════════════════════════════
     # Test Cases Operations
@@ -252,7 +280,9 @@ class RAGTool:
         description: Optional[str] = None,
         expected: Optional[str] = None,
         metadata: Optional[Dict] = None,
-        step_verification_configs: Optional[List[Dict]] = None
+        step_verification_configs: Optional[List[Dict]] = None,
+        step_cleanup_configs: Optional[List[Dict]] = None,
+        post_condition_intents: Optional[List[str]] = None
     ) -> bool:
         """
         Add test case to vector database.
@@ -266,6 +296,8 @@ class RAGTool:
             expected: Expected result
             metadata: Additional metadata
             step_verification_configs: Per-step verification configurations
+            step_cleanup_configs: Per-step cleanup configurations
+            post_condition_intents: Raw ADB intent commands for end-of-test cleanup
         """
         if not self.test_cases_collection:
             logger.error("❌ RAG not initialized")
@@ -293,6 +325,8 @@ class RAGTool:
                 "expected": expected or "",
                 "step_count": len(steps),
                 "has_verification_configs": bool(step_verification_configs),
+                "has_cleanup_configs": bool(step_cleanup_configs),
+                "has_post_condition": bool(post_condition_intents),
                 "created_at": datetime.now().isoformat()
             }
 
@@ -311,7 +345,9 @@ class RAGTool:
                     "steps": steps,
                     "description": description,
                     "expected": expected,
-                    "step_verification_configs": step_verification_configs or []
+                    "step_verification_configs": step_verification_configs or [],
+                    "step_cleanup_configs": step_cleanup_configs or [],
+                    "post_condition_intents": post_condition_intents or []
                 })],
                 metadatas=[meta]
             )
@@ -357,6 +393,16 @@ class RAGTool:
             if step_verification_configs:
                 logger.info(f"   Verification configs: {len(step_verification_configs)} steps")
 
+            # Include cleanup configs if present
+            step_cleanup_configs = doc.get("step_cleanup_configs", [])
+            if step_cleanup_configs:
+                logger.info(f"   Cleanup configs: {len(step_cleanup_configs)} steps")
+
+            # Include post condition intents if present
+            post_condition_intents = doc.get("post_condition_intents", [])
+            if post_condition_intents:
+                logger.info(f"   Post condition intents: {len(post_condition_intents)} commands")
+
             return {
                 "test_id": doc["test_id"],
                 "title": doc["title"],
@@ -364,7 +410,9 @@ class RAGTool:
                 "description": doc.get("description", ""),
                 "steps": doc["steps"],
                 "expected": doc.get("expected", ""),
-                "step_verification_configs": step_verification_configs
+                "step_verification_configs": step_verification_configs,
+                "step_cleanup_configs": step_cleanup_configs,
+                "post_condition_intents": post_condition_intents
             }
 
         except Exception as e:
@@ -469,7 +517,9 @@ class RAGTool:
                         description=test_case.get("description", ""),
                         expected=test_case.get("expected", ""),
                         metadata={"type": test_case.get("type", "Test Case")},
-                        step_verification_configs=test_case.get("step_verification_configs", [])
+                        step_verification_configs=test_case.get("step_verification_configs", []),
+                        step_cleanup_configs=test_case.get("step_cleanup_configs", []),
+                        post_condition_intents=test_case.get("post_condition_intents", [])
                     )
 
                     if success:
@@ -566,16 +616,17 @@ class RAGTool:
         test_id: str,
         title: str,
         component: str,
-        steps: List[Dict[str, Any]]
+        steps: List[Dict[str, Any]],
+        cleanup_results: Optional[List[Dict[str, Any]]] = None
     ) -> bool:
         """Save learned solution after successful execution."""
         if not self.learned_solutions_collection:
             logger.warning("⚠️ RAG not initialized")
             return False
-        
+
         try:
             existing = self.get_learned_solution(test_id)
-            
+
             if existing:
                 execution_count = existing.get("execution_count", 0) + 1
                 success_count = existing.get("success_count", 0) + 1
@@ -584,15 +635,16 @@ class RAGTool:
                 execution_count = 1
                 success_count = 1
                 success_rate = 1.0
-            
+
             doc_text = f"{title}. Component: {component}. Steps: {len(steps)}"
             embedding = self.embedding_function.encode(doc_text).tolist()
-            
+
             solution_data = {
                 "test_id": test_id,
                 "title": title,
                 "component": component,
                 "steps": steps,
+                "cleanup_results": cleanup_results or [],
                 "execution_count": execution_count,
                 "success_count": success_count,
                 "success_rate": success_rate,

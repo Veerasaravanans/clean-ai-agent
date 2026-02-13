@@ -2102,7 +2102,147 @@ function setupEventListeners() {
             }
         });
     }
-    
+
+    // Test ID Input Change Handler - Check for modified test case
+    const testIdInput = document.getElementById('test-id-input');
+    if (testIdInput) {
+        testIdInput.addEventListener('blur', async () => {
+            await checkTestCaseModification();
+        });
+
+        testIdInput.addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                await checkTestCaseModification();
+            }
+        });
+    }
+
+    // Disable & Re-learn Button Handler
+    const disableLearnedBtn = document.getElementById('disable-learned-btn');
+    if (disableLearnedBtn) {
+        disableLearnedBtn.addEventListener('click', async () => {
+            const testId = document.getElementById('test-id-input').value.trim();
+            if (!testId) return;
+
+            // Uncheck the learned solutions checkbox
+            const learnedCheckbox = document.getElementById('use-learned-checkbox');
+            if (learnedCheckbox) {
+                learnedCheckbox.checked = false;
+            }
+
+            // Hide the warning
+            hideTestCaseModificationWarning();
+
+            showNotification('Learned solutions disabled. Will create fresh solution on next run.', 'info');
+        });
+    }
+
+    // Dismiss Warning Button Handler
+    const dismissWarningBtn = document.getElementById('dismiss-warning-btn');
+    if (dismissWarningBtn) {
+        dismissWarningBtn.addEventListener('click', () => {
+            hideTestCaseModificationWarning();
+            showNotification('Warning dismissed. Check browser console (F12) for comparison details.', 'info');
+        });
+    }
+
+    // Show Exact Diff Button Handler
+    const showDiffBtn = document.getElementById('show-diff-btn');
+    if (showDiffBtn) {
+        showDiffBtn.addEventListener('click', async () => {
+            const testId = document.getElementById('test-id-input').value.trim();
+            if (!testId) {
+                alert('Please enter a Test ID first');
+                return;
+            }
+
+            try {
+                const response = await apiRequest(`/api/rag/compare/${testId}`);
+                if (response.success) {
+                    if (!response.has_learned) {
+                        alert('No learned solution exists for this test ID.\n\nRun the test first to create a learned solution.');
+                        return;
+                    }
+
+                    if (!response.has_current) {
+                        alert('Test case not found in RAG database.\n\nClick "Index Test Cases" in RAG panel to add it.');
+                        return;
+                    }
+
+                    if (response.match) {
+                        alert('✅ NO DIFFERENCES FOUND!\n\nThe learned solution matches the current test case perfectly.\n\nThis warning is a FALSE POSITIVE. Click "Dismiss" to hide it.\n\nThis is a bug that needs to be fixed.');
+                        return;
+                    }
+
+                    // Show differences
+                    let message = '❌ DIFFERENCES FOUND:\n\n';
+                    response.differences.forEach(diff => {
+                        if (diff.type === 'count_mismatch') {
+                            message += `Step Count Mismatch:\n`;
+                            message += `  Learned: ${diff.learned_count} steps\n`;
+                            message += `  Current: ${diff.current_count} steps\n\n`;
+                        } else if (diff.type === 'description_mismatch') {
+                            message += `Step ${diff.step} - Description Mismatch:\n\n`;
+                            message += `Learned (raw):\n"${diff.learned_raw}"\n\n`;
+                            message += `Current (raw):\n"${diff.current_raw}"\n\n`;
+                            message += `Learned (normalized):\n"${diff.learned_normalized}"\n\n`;
+                            message += `Current (normalized):\n"${diff.current_normalized}"\n\n`;
+                            message += `---\n\n`;
+                        }
+                    });
+
+                    message += '\nTO FIX:\n';
+                    message += '1. Check Excel file - ensure step descriptions match exactly\n';
+                    message += '2. Click "Index Test Cases" in RAG panel\n';
+                    message += '3. Delete learned solution and re-run test\n';
+
+                    alert(message);
+
+                    // Also log to console
+                    console.log('DETAILED COMPARISON RESULTS:');
+                    console.log(response);
+                }
+            } catch (error) {
+                console.error('Comparison error:', error);
+                alert('Error comparing: ' + error.message);
+            }
+        });
+    }
+
+    // Check Console Button Handler
+    const checkConsoleBtn = document.getElementById('check-console-btn');
+    if (checkConsoleBtn) {
+        checkConsoleBtn.addEventListener('click', () => {
+            console.log('='.repeat(80));
+            console.log('TROUBLESHOOTING GUIDE: Test Case Modification Warning');
+            console.log('='.repeat(80));
+            console.log('');
+            console.log('If you see a mismatch warning, check the console log above for:');
+            console.log('  - "Learned (raw)" - The description stored in the learned solution');
+            console.log('  - "Current (raw)" - The description from the Excel file');
+            console.log('  - "Learned (normalized)" - After removing punctuation/spaces');
+            console.log('  - "Current (normalized)" - After removing punctuation/spaces');
+            console.log('');
+            console.log('Common causes:');
+            console.log('  1. Excel file was modified but RAG not re-indexed');
+            console.log('     → Click "Index Test Cases" in RAG panel');
+            console.log('');
+            console.log('  2. Old learned solution still exists');
+            console.log('     → Click "View Learned" → Delete the learned solution');
+            console.log('     → Re-run the test to create a fresh learned solution');
+            console.log('');
+            console.log('  3. Minor formatting differences (extra spaces, quotes, etc.)');
+            console.log('     → Check the normalized versions above');
+            console.log('     → If they match, this is a bug - report it');
+            console.log('');
+            console.log('  4. False positive - descriptions actually match');
+            console.log('     → Click "Dismiss" to hide the warning');
+            console.log('');
+            console.log('='.repeat(80));
+            alert('Check the browser console (this window) for troubleshooting details.');
+        });
+    }
+
     const stopTestBtn = document.getElementById('stop-test-btn');
     if (stopTestBtn) {
         stopTestBtn.addEventListener('click', async () => {
@@ -4122,6 +4262,128 @@ async function viewLearnedSolutionDetail(testId) {
 
             const steps = solution.steps || [];
 
+            // Check for test case changes
+            let changeDetected = false;
+            let changeMessage = '';
+            try {
+                const testCaseResponse = await apiRequest(`/api/rag/test/${testId}`);
+                if (testCaseResponse.success && testCaseResponse.data) {
+                    const currentTestCase = testCaseResponse.data;
+                    const currentSteps = currentTestCase.steps || [];
+
+                    // Helper to normalize descriptions for comparison
+                    const normalizeDesc = (desc) => {
+                        let normalized = (desc || '')
+                            .trim()
+                            .toLowerCase();
+
+                        // CRITICAL FIX: Remove "Step X:" prefix before comparing
+                        // Excel parser adds "Step 1:", "Step 2:", etc.
+                        normalized = normalized.replace(/^step\s+\d+:\s*/i, '');
+
+                        // Remove "Expected:" suffix before comparing
+                        if (normalized.includes('expected:')) {
+                            normalized = normalized.split('expected:')[0].trim();
+                        }
+
+                        // Remove punctuation and collapse spaces
+                        normalized = normalized
+                            .replace(/[^\w\s]/g, '')  // Remove punctuation
+                            .replace(/\s+/g, ' ')      // Collapse spaces
+                            .trim();
+
+                        return normalized;
+                    };
+
+                    // Compare step descriptions
+                    if (currentSteps.length !== steps.length) {
+                        changeDetected = true;
+                        changeMessage = `Step count changed: ${steps.length} learned → ${currentSteps.length} current`;
+                    } else {
+                        for (let i = 0; i < steps.length; i++) {
+                            const learnedDesc = normalizeDesc(steps[i].description || '');
+                            const currentDesc = normalizeDesc(currentSteps[i] || '');
+
+                            if (learnedDesc !== currentDesc) {
+                                changeDetected = true;
+                                changeMessage = `Step ${i + 1} description changed in Excel`;
+
+                                // Debug logging
+                                console.log('Description mismatch detected:');
+                                console.log(`  Learned (raw): "${steps[i].description}"`);
+                                console.log(`  Current (raw): "${currentSteps[i]}"`);
+                                console.log(`  Learned (normalized): "${learnedDesc}"`);
+                                console.log(`  Current (normalized): "${currentDesc}"`);
+
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Could not check for test case changes:', err);
+            }
+
+            // Helper function to format coordinates based on action type
+            const formatCoordinates = (step) => {
+                const action = step.action || 'action';
+                const coords = step.coordinates;
+                const target = step.target_element || step.target || 'target';
+
+                let coordText = '';
+
+                if (!coords) {
+                    return `${action} on "${target}"`;
+                }
+
+                // Handle swipe actions with 4-tuple coordinates
+                if (action === 'swipe' && Array.isArray(coords) && coords.length >= 4) {
+                    const direction = step.swipe_direction || 'unknown direction';
+                    const position = step.swipe_start_position || 'center';
+
+                    coordText = `${action} ${direction} from ${position} side: (${coords[0]}, ${coords[1]}) → (${coords[2]}, ${coords[3]})`;
+
+                    // Add duration if available
+                    if (step.swipe_duration_ms) {
+                        coordText += ` [${step.swipe_duration_ms}ms]`;
+                    }
+                    if (step.swipe_speed) {
+                        coordText += ` [${step.swipe_speed} speed]`;
+                    }
+
+                    return coordText;
+                }
+
+                // Handle long_press with duration
+                if (action === 'long_press' && Array.isArray(coords) && coords.length >= 2) {
+                    coordText = `${action} on "${target}" at (${coords[0]}, ${coords[1]})`;
+                    if (step.long_press_duration_seconds) {
+                        coordText += ` for ${step.long_press_duration_seconds}s`;
+                    }
+                    return coordText;
+                }
+
+                // Handle input_text action
+                if (action === 'input_text') {
+                    const text = step.input_text || '';
+                    return `${action}: "${text}"`;
+                }
+
+                // Handle press_key actions
+                if (action.startsWith('press_')) {
+                    const keyName = action.replace('press_', '').toUpperCase();
+                    return `press ${keyName} key`;
+                }
+
+                // Default: tap, double_tap, or generic action with 2-tuple coordinates
+                if (Array.isArray(coords) && coords.length >= 2) {
+                    coordText = `${action} on "${target}" at (${coords[0]}, ${coords[1]})`;
+                    return coordText;
+                }
+
+                return `${action} on "${target}"`;
+            };
+
             body.innerHTML = `
                 <div class="rag-result-item">
                     <div class="rag-result-header">
@@ -4134,19 +4396,33 @@ async function viewLearnedSolutionDetail(testId) {
                         <span>📋 ${steps.length} steps</span>
                         <span>🔄 ${solution.execution_count || 0} runs</span>
                     </div>
+                    ${changeDetected ? `
+                        <div style="margin-top: 12px; padding: 12px; background: rgba(255, 152, 0, 0.15); border-left: 3px solid #ff9800; border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 8px; color: #ff9800; font-weight: 600; margin-bottom: 6px;">
+                                <span>⚠️</span>
+                                <span>Test Case Modified</span>
+                            </div>
+                            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.8); margin-bottom: 8px;">
+                                ${changeMessage}. The learned solution may be outdated.
+                            </div>
+                            <button class="btn" style="font-size: 11px; padding: 4px 12px; background: rgba(255, 152, 0, 0.2); border: 1px solid #ff9800;"
+                                    onclick="deleteLearnedSolution('${testId}')">
+                                🗑️ Delete Learned Solution
+                            </button>
+                        </div>
+                    ` : ''}
                     ${steps.length > 0 ? `
                         <div class="rag-result-steps">
                             <div class="rag-result-steps-title">Learned Steps (with coordinates):</div>
                             ${steps.map((step, i) => `
                                 <div class="rag-result-step" data-step="${i + 1}.">
-                                    ${step.action || 'action'} on "${step.target || 'target'}"
-                                    ${step.coordinates ? ` at (${step.coordinates[0]}, ${step.coordinates[1]})` : ''}
+                                    ${formatCoordinates(step)}
                                 </div>
                             `).join('')}
                         </div>
                     ` : ''}
                     <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--glass-border);">
-                        <button class="btn btn-primary" onclick="document.getElementById('test-id-input').value='${testId}'; closeRAGModal(); showNotification('Test ID loaded', 'success');">
+                        <button class="btn btn-primary" onclick="loadTestIdFromModal('${testId}');">
                             📥 Load Test ID
                         </button>
                     </div>
@@ -4159,6 +4435,139 @@ async function viewLearnedSolutionDetail(testId) {
         console.error('Failed to load learned solution:', error);
         showNotification('Failed to load solution details', 'error');
     }
+}
+
+// Delete learned solution
+async function deleteLearnedSolution(testId) {
+    if (!confirm(`Are you sure you want to delete the learned solution for ${testId}?\n\nThis will allow the agent to create a fresh solution on the next execution.`)) {
+        return;
+    }
+
+    try {
+        const response = await apiRequest(`/api/rag/learned/${testId}`, 'DELETE');
+
+        if (response.success) {
+            showNotification('Learned solution deleted', 'success');
+            closeRAGModal();
+            await fetchRAGStats(); // Refresh stats
+            await checkTestCaseModification(); // Recheck
+        } else {
+            showNotification('Failed to delete learned solution', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting learned solution:', error);
+        showNotification('Failed to delete learned solution', 'error');
+    }
+}
+
+// Check if test case has been modified compared to learned solution
+async function checkTestCaseModification() {
+    const testId = document.getElementById('test-id-input').value.trim();
+    const warningDiv = document.getElementById('learned-solution-warning');
+    const warningText = document.getElementById('learned-solution-warning-text');
+
+    if (!testId || !warningDiv || !warningText) {
+        return;
+    }
+
+    try {
+        // Check if learned solution exists
+        const learnedResponse = await apiRequest(`/api/rag/learned/${testId}`);
+        if (!learnedResponse.success || !learnedResponse.data) {
+            // No learned solution, hide warning
+            hideTestCaseModificationWarning();
+            return;
+        }
+
+        const learnedSolution = learnedResponse.data;
+        const learnedSteps = learnedSolution.steps || [];
+
+        // Get current test case from RAG
+        const testCaseResponse = await apiRequest(`/api/rag/test/${testId}`);
+        if (!testCaseResponse.success || !testCaseResponse.data) {
+            // Can't find current test case, hide warning
+            hideTestCaseModificationWarning();
+            return;
+        }
+
+        const currentTestCase = testCaseResponse.data;
+        const currentSteps = currentTestCase.steps || [];
+
+        // Helper to normalize descriptions for comparison
+        const normalizeDesc = (desc) => {
+            let normalized = (desc || '')
+                .trim()
+                .toLowerCase();
+
+            // CRITICAL FIX: Remove "Step X:" prefix before comparing
+            // Excel parser adds "Step 1:", "Step 2:", etc.
+            normalized = normalized.replace(/^step\s+\d+:\s*/i, '');
+
+            // Remove "Expected:" suffix before comparing
+            if (normalized.includes('expected:')) {
+                normalized = normalized.split('expected:')[0].trim();
+            }
+
+            // Remove punctuation and collapse spaces
+            normalized = normalized
+                .replace(/[^\w\s]/g, '')  // Remove punctuation
+                .replace(/\s+/g, ' ')      // Collapse spaces
+                .trim();
+
+            return normalized;
+        };
+
+        // Compare step counts
+        if (currentSteps.length !== learnedSteps.length) {
+            warningText.textContent = `Step count changed: ${learnedSteps.length} learned → ${currentSteps.length} current. Disable learned solutions to create fresh.`;
+            warningDiv.style.display = 'block';
+            return;
+        }
+
+        // Compare step descriptions
+        for (let i = 0; i < learnedSteps.length; i++) {
+            const learnedDesc = normalizeDesc(learnedSteps[i].description || '');
+            const currentDesc = normalizeDesc(currentSteps[i] || '');
+
+            if (learnedDesc !== currentDesc) {
+                warningText.textContent = `Step ${i + 1} description changed in Excel. Disable learned solutions to create fresh.`;
+                warningDiv.style.display = 'block';
+
+                // Debug logging
+                console.log('Description mismatch detected in main UI:');
+                console.log(`  Step ${i + 1}`);
+                console.log(`  Learned (raw): "${learnedSteps[i].description}"`);
+                console.log(`  Current (raw): "${currentSteps[i]}"`);
+                console.log(`  Learned (normalized): "${learnedDesc}"`);
+                console.log(`  Current (normalized): "${currentDesc}"`);
+
+                return;
+            }
+        }
+
+        // No changes detected, hide warning
+        hideTestCaseModificationWarning();
+
+    } catch (error) {
+        console.warn('Could not check for test case changes:', error);
+        hideTestCaseModificationWarning();
+    }
+}
+
+// Hide test case modification warning
+function hideTestCaseModificationWarning() {
+    const warningDiv = document.getElementById('learned-solution-warning');
+    if (warningDiv) {
+        warningDiv.style.display = 'none';
+    }
+}
+
+// Load test ID from modal (called when user clicks "Load Test ID")
+async function loadTestIdFromModal(testId) {
+    document.getElementById('test-id-input').value = testId;
+    closeRAGModal();
+    showNotification('Test ID loaded', 'success');
+    await checkTestCaseModification();
 }
 
 // Close modal on background click
@@ -4188,6 +4597,8 @@ window.showLearnedSolutionsModal = showLearnedSolutionsModal;
 window.showTestCaseModal = showTestCaseModal;
 window.showSearchResultsModal = showSearchResultsModal;
 window.viewLearnedSolutionDetail = viewLearnedSolutionDetail;
+window.deleteLearnedSolution = deleteLearnedSolution;
+window.loadTestIdFromModal = loadTestIdFromModal;
 
 /* ─────────────────────────────────────────────────────────────── */
 /* Excel Batch Functions */

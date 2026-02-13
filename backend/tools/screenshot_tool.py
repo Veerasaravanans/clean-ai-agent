@@ -129,115 +129,165 @@ class ScreenshotTool:
         """
         Capture screenshot at FULL device resolution.
         NO RESIZE - preserves exact coordinates for vision analysis.
+
+        CRITICAL FIX: Properly handles ADB warnings/errors that corrupt PNG data.
         """
         try:
             cmd_base = self._get_adb_cmd()
-            
+
+            # CRITICAL: Add small delay to ensure device is ready after previous action
+            time.sleep(0.2)
+
             # Create temp file on host
             with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tmp:
                 temp_local = tmp.name
-            
+
             try:
-                # Direct pull (most reliable for emulators)
+                # METHOD 1: Direct pull (most reliable for emulators)
                 device_path = "/sdcard/screen.png"
-                
-                # Capture to device
+
+                # Clean old screenshot first
                 subprocess.run(
-                    cmd_base + ["shell", "screencap", "-p", device_path],
-                    capture_output=True,
-                    timeout=2
+                    cmd_base + ["shell", "rm", "-f", device_path],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    timeout=1
                 )
-                
-                # Pull to local temp file
+                time.sleep(0.1)
+
+                # Capture to device
+                # CRITICAL: Redirect stderr to DEVNULL to avoid warnings in output
                 result = subprocess.run(
-                    cmd_base + ["pull", device_path, temp_local],
-                    capture_output=True,
+                    cmd_base + ["shell", "screencap", "-p", device_path],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,  # Ignore warnings
                     timeout=2
                 )
-                
-                if result.returncode != 0:
-                    logger.debug("Pull method failed, trying exec-out")
-                    # Fallback: exec-out
-                    result = subprocess.run(
-                        cmd_base + ["exec-out", "screencap", "-p"],
-                        capture_output=True,
+
+                if result.returncode == 0:
+                    # Pull to local temp file
+                    # CRITICAL: stderr=DEVNULL prevents warnings from corrupting binary data
+                    pull_result = subprocess.run(
+                        cmd_base + ["pull", device_path, temp_local],
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,  # Ignore pull progress messages
                         timeout=2
                     )
-                    if result.returncode == 0 and len(result.stdout) > 100:
-                        with open(temp_local, 'wb') as f:
-                            f.write(result.stdout)
+
+                    if pull_result.returncode == 0:
+                        # Read PNG file
+                        with open(temp_local, 'rb') as f:
+                            png_data = f.read()
+
+                        # Validate PNG data
+                        if len(png_data) >= 1000 and png_data.startswith(b'\x89PNG'):
+                            logger.debug(f"✅ Method 1 (pull) succeeded: {len(png_data)} bytes")
+                        else:
+                            logger.warning(f"Method 1 produced invalid data, trying exec-out")
+                            png_data = None
                     else:
-                        return None
-                
-                # Read PNG file
-                with open(temp_local, 'rb') as f:
-                    png_data = f.read()
-                
-                if len(png_data) < 100:
-                    logger.error("PNG data too small, retrying with exec-out")
+                        logger.debug("Pull failed, trying exec-out")
+                        png_data = None
+                else:
+                    logger.debug("Screencap failed, trying exec-out")
+                    png_data = None
+
+                # METHOD 2: exec-out (fallback, works for most devices)
+                if not png_data:
+                    logger.debug("Trying exec-out method...")
                     result = subprocess.run(
                         cmd_base + ["exec-out", "screencap", "-p"],
-                        capture_output=True,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL,  # CRITICAL: Ignore warnings
                         timeout=3
                     )
-                    if result.returncode == 0 and len(result.stdout) > 100:
-                        png_data = result.stdout
-                    else:
-                        logger.error("Both methods produced insufficient data")
-                        return None
-                
-                # Validate PNG header
-                if not png_data.startswith(b'\x89PNG'):
-                    logger.error(f"Invalid PNG header: {png_data[:10]}")
-                    result = subprocess.run(
-                        cmd_base + ["exec-out", "screencap", "-p"],
-                        capture_output=True,
-                        timeout=3
-                    )
-                    if result.returncode == 0 and len(result.stdout) > 100:
-                        png_data = result.stdout
-                        if not png_data.startswith(b'\x89PNG'):
-                            logger.error("PNG validation failed on all methods")
+
+                    if result.returncode == 0 and len(result.stdout) > 1000:
+                        raw_data = result.stdout
+
+                        # CRITICAL FIX: Filter out ADB warnings/errors that corrupt PNG
+                        # Find PNG header in the data stream
+                        png_header_index = raw_data.find(b'\x89PNG')
+
+                        if png_header_index > 0:
+                            # There's junk before the PNG header (warnings, errors)
+                            logger.debug(f"Found PNG header at offset {png_header_index}, stripping {png_header_index} bytes of warnings")
+                            png_data = raw_data[png_header_index:]
+                        elif png_header_index == 0:
+                            # Clean PNG data from start
+                            png_data = raw_data
+                        else:
+                            # No PNG header found
+                            logger.error(f"No PNG header found in {len(raw_data)} bytes of data")
+                            logger.error(f"Data starts with: {raw_data[:50]}")
+                            return None
+
+                        if len(png_data) >= 1000 and png_data.startswith(b'\x89PNG'):
+                            logger.debug(f"✅ Method 2 (exec-out) succeeded: {len(png_data)} bytes")
+                        else:
+                            logger.error(f"exec-out produced invalid PNG data")
                             return None
                     else:
+                        logger.error("exec-out failed or produced insufficient data")
                         return None
+
+                # Final validation
+                if not png_data or len(png_data) < 1000:
+                    logger.error("No valid PNG data captured")
+                    return None
+
+                if not png_data.startswith(b'\x89PNG'):
+                    logger.error(f"Invalid PNG header after all methods: {png_data[:20]}")
+                    return None
                 
                 # Process PNG → JPEG at FULL resolution
                 try:
                     img = Image.open(io.BytesIO(png_data))
+                    # Verify image is valid by accessing size
+                    width, height = img.size
+                    if width < 100 or height < 100:
+                        logger.error(f"Image too small: {width}x{height}")
+                        return None
+                    logger.debug(f"PNG decoded successfully: {width}x{height}")
                 except Exception as e:
                     logger.error(f"PIL failed to open PNG: {e}")
+                    logger.error(f"PNG data length: {len(png_data)}, starts with: {png_data[:20]}")
                     return None
-                
+
                 # Convert RGBA to RGB (JPEG doesn't support alpha)
                 if img.mode == 'RGBA':
                     img = img.convert('RGB')
                 elif img.mode not in ('RGB', 'L'):
                     img = img.convert('RGB')
-                
+
                 # NO RESIZE - keep full device resolution for vision analysis
                 # Vision tool needs exact coordinates matching device screen
-                
+
                 # Convert to JPEG bytes at full resolution
                 buffer = io.BytesIO()
                 img.save(buffer, 'JPEG', quality=self.quality, optimize=True)
-                
-                return buffer.getvalue()
-                
+
+                jpeg_data = buffer.getvalue()
+                logger.debug(f"JPEG created: {len(jpeg_data)} bytes")
+                return jpeg_data
+
             finally:
                 # Cleanup
                 try:
                     Path(temp_local).unlink(missing_ok=True)
                     subprocess.run(
                         cmd_base + ["shell", "rm", "-f", device_path],
-                        capture_output=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
                         timeout=1
                     )
                 except:
                     pass
-                    
+
         except Exception as e:
             logger.error(f"Capture error: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     def capture_raw(self) -> Optional[bytes]:

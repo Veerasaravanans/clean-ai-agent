@@ -1,7 +1,14 @@
 """
-vision_tool.py - FULLY DYNAMIC Vision Tool - AI decides routing
+vision_tool.py - OCR-FIRST DYNAMIC Vision Tool
 Primary Function: Find coordinates of UI elements (text/icons) with 200% reliability
-PRIORITY: Device Profile → CV/AI Detection → OCR
+
+PRIORITY SYSTEM (Data-Driven):
+1. OCR Results (Primary Data Source) - Check if element text exists in OCR
+2. AI Classification (Fallback) - Only if not found in OCR
+3. For TEXTED elements: OCR-based coordinate detection
+4. For NON-TEXTED icons: Device Profile → CV/AI Detection
+
+KEY IMPROVEMENT: No longer asks AI to classify elements that OCR already found!
 """
 import logging
 import os
@@ -37,7 +44,12 @@ if os.name == 'nt':
 logger = logging.getLogger(__name__)
 
 class VisionTool:
-    """FULLY DYNAMIC vision tool with device profile priority for non-texted icons."""
+    """
+    OCR-FIRST DYNAMIC vision tool.
+
+    Uses OCR results as primary data source for routing decisions (not AI classification).
+    Device profile priority for non-texted icons.
+    """
     
     def __init__(self, model_preference: Optional[str] = None):
         self.confidence_threshold = settings.ocr_confidence_threshold
@@ -215,49 +227,162 @@ Your answer:"""
         
         return unique_elements
     
+    def _get_or_run_ocr(self, screenshot_path: str) -> List[Dict]:
+        """
+        Get OCR results, either from cache or run fresh OCR.
+
+        Returns:
+            List of dicts with 'text', 'x', 'y', 'confidence', etc.
+        """
+        # Check if we already have OCR results for this screenshot
+        if hasattr(self, '_ocr_cache') and screenshot_path in self._ocr_cache:
+            logger.debug(f"Using cached OCR results for {screenshot_path}")
+            return self._ocr_cache[screenshot_path]
+
+        # Run OCR via texted tool
+        logger.debug(f"Running OCR on {screenshot_path}")
+        ocr_results = self.texted_tool._get_all_ocr_detections(screenshot_path)
+
+        # Cache results
+        if not hasattr(self, '_ocr_cache'):
+            self._ocr_cache = {}
+        self._ocr_cache[screenshot_path] = ocr_results
+
+        return ocr_results
+
+    def _check_ocr_contains(self, element_name: str, ocr_results: List[Dict]) -> bool:
+        """
+        Check if element name (or any part of it) exists in OCR results.
+
+        Dynamic matching logic:
+        - "Play Store" → checks for "Play Store", "Play", "Store"
+        - "Settings" → checks for "Settings"
+        - Case-insensitive
+        - Partial word matching
+
+        Returns:
+            True if element found in OCR, False otherwise
+        """
+        if not ocr_results:
+            return False
+
+        # Extract all text from OCR results
+        ocr_texts = []
+        for result in ocr_results:
+            if isinstance(result, dict) and 'text' in result:
+                ocr_texts.append(result['text'].lower().strip())
+            elif isinstance(result, str):
+                ocr_texts.append(result.lower().strip())
+
+        if not ocr_texts:
+            return False
+
+        # Normalize element name
+        element_lower = element_name.lower().strip()
+
+        # Remove common suffixes
+        for suffix in [' app', ' icon', ' button', ' label']:
+            if element_lower.endswith(suffix):
+                element_lower = element_lower[:-len(suffix)].strip()
+
+        # Check exact match
+        if element_lower in ocr_texts:
+            logger.debug(f"✓ Exact match: '{element_lower}' found in OCR")
+            return True
+
+        # Check if any word in element name appears in OCR
+        words = element_lower.split()
+        for word in words:
+            if len(word) > 2:  # Skip very short words like "of", "in"
+                for ocr_text in ocr_texts:
+                    if word in ocr_text or ocr_text in word:
+                        logger.debug(f"✓ Partial match: word '{word}' found in OCR text '{ocr_text}'")
+                        return True
+
+        logger.debug(f"✗ No match: '{element_name}' not found in OCR results")
+        return False
+
     def find_element_with_ai(self, screenshot_path: str, description: str, has_text: bool = True) -> Optional[Coordinates]:
         """
-        PRIORITY SYSTEM:
-        - For TEXTED elements: OCR first
-        - For NON-TEXTED icons: Device Profile → CV/AI Detection
+        OCR-FIRST DYNAMIC DETECTION:
+
+        Priority 1: Check OCR results (data-driven decision)
+        Priority 2: AI classification (fallback)
+        Priority 3: Device profile for non-texted icons
+        Priority 4: CV/AI detection
         """
-        logger.info(f"🎯 Finding element: '{description}'")
-        
-        # CRITICAL: Let AI analyze screenshot and decide
+        logger.info("=" * 70)
+        logger.info(f"🔍 VISION TOOL: Finding '{description}'")
+        logger.info("=" * 70)
+
+        # ═══════════════════════════════════════════════════════════
+        # STEP 1: Get OCR results (PRIMARY DATA SOURCE)
+        # ═══════════════════════════════════════════════════════════
+        ocr_results = self._get_or_run_ocr(screenshot_path)
+        logger.info(f"   OCR Results: {len(ocr_results)} text elements detected")
+
+        # ═══════════════════════════════════════════════════════════
+        # STEP 2: Check if element exists in OCR results
+        # ═══════════════════════════════════════════════════════════
+        is_in_ocr = self._check_ocr_contains(description, ocr_results)
+
+        if is_in_ocr:
+            # ═══════════════════════════════════════════════════════════
+            # TEXTED ELEMENT PATH (OCR-based)
+            # ═══════════════════════════════════════════════════════════
+            logger.info(f"   Decision: TEXTED (found in OCR) ✓")
+            logger.info(f"   Method: Using OCR-based detection")
+            logger.info("=" * 70)
+
+            result = self.texted_tool.find_text(screenshot_path, description)
+
+            # FALLBACK: If texted fails, try non-texted
+            if result is None:
+                logger.warning("    OCR-based detection failed - AUTO FALLBACK to non-texted")
+                result = self.non_texted_tool.find_element_with_ai(screenshot_path, description, is_texted=False)
+
+            return result
+
+        # ═══════════════════════════════════════════════════════════
+        # STEP 3: Element NOT in OCR - Ask AI to classify
+        # ═══════════════════════════════════════════════════════════
+        logger.info(f"   Element NOT in OCR results")
+        logger.info(f"   Asking AI to classify...")
+
+        # Only ask AI if we actually use AI vision
         if self.use_ai_vision:
             has_text_label = self._ask_ai_has_text_label(screenshot_path, description)
         else:
-            has_text_label = True
-        
-        # Route based on AI decision
+            has_text_label = False  # Default to non-texted if AI vision disabled
+
+        logger.info(f"   AI Decision: {'TEXTED' if has_text_label else 'NON-TEXTED'}")
+        logger.info(f"   Method: Using {'texted' if has_text_label else 'non-texted'} detection")
+        logger.info("=" * 70)
+
         if has_text_label:
-            # ═══════════════════════════════════════════════════════════
-            # TEXTED ELEMENT PATH
-            # ═══════════════════════════════════════════════════════════
-            logger.info(f"   → Routing to TEXTED tool (AI detected text label)")
-            
+            # AI thinks it's texted but OCR didn't find it → might be OCR failure
+            logger.warning(f"⚠️ AI says TEXTED but not in OCR → Trying TEXTED detection anyway")
             result = self.texted_tool.find_text(screenshot_path, description)
-            
-            # AUTOMATIC FALLBACK: If texted fails, try non-texted
+
+            # Fallback to non-texted
             if result is None:
                 logger.warning("    Texted tool failed - AUTO FALLBACK to non-texted")
                 result = self.non_texted_tool.find_element_with_ai(screenshot_path, description, is_texted=False)
-            
+
             return result
         else:
             # ═══════════════════════════════════════════════════════════
             # NON-TEXTED ICON PATH - DEVICE PROFILE FIRST!
             # ═══════════════════════════════════════════════════════════
-            logger.info(f"   → NON-TEXTED icon detected")
             logger.info(f"   → Priority 1: Checking DEVICE PROFILE...")
-            
+
             # PRIORITY 1: Check device profile FIRST
             try:
                 from backend.tools.device_coordinate_tool import get_device_coordinate_tool
-                
+
                 device_tool = get_device_coordinate_tool()
                 profile_coords = device_tool.find_icon_coordinates(description)
-                
+
                 if profile_coords:
                     logger.info(f"✅ FOUND in device profile: {description} at {profile_coords}")
                     return Coordinates(
@@ -270,16 +395,16 @@ Your answer:"""
                     logger.info(f"   → Not in profile, trying CV/AI detection...")
             except Exception as e:
                 logger.warning(f"Device profile lookup failed: {e}")
-            
+
             # PRIORITY 2: Fall back to CV/AI detection
             logger.info(f"   → Priority 2: Using CV/AI detection...")
             result = self.non_texted_tool.find_element_with_ai(screenshot_path, description, is_texted=False)
-            
+
             # Auto-save successful CV/AI detection to profile
             if result:
                 try:
                     from backend.services.device_profile_service import get_device_profile_service
-                    
+
                     profile_service = get_device_profile_service()
                     profile_service.add_coordinate(
                         icon_name=description,
@@ -290,7 +415,7 @@ Your answer:"""
                     logger.info(f"💾 Auto-saved to device profile: {description}")
                 except Exception as e:
                     logger.warning(f"Failed to auto-save coordinate: {e}")
-            
+
             return result
     
     def find_in_app_grid(self, screenshot_path: str, app_name: str, context: str = "") -> Optional[Coordinates]:

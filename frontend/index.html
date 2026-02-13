@@ -82,6 +82,29 @@
                             <input type="checkbox" id="use-learned-checkbox" checked />
                             Use Learned Solutions
                         </label>
+                        <div id="learned-solution-warning" style="display: none; margin-top: 8px; padding: 8px; background: rgba(255, 152, 0, 0.15); border-left: 3px solid #ff9800; border-radius: 4px; font-size: 11px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                                <div style="display: flex; align-items: center; gap: 6px; color: #ff9800; font-weight: 600;">
+                                    <span>⚠️</span>
+                                    <span>Test Case Modified</span>
+                                </div>
+                                <button id="dismiss-warning-btn" class="btn" style="font-size: 10px; padding: 2px 8px; background: transparent; border: 1px solid rgba(255, 152, 0, 0.5); cursor: pointer; color: #ff9800;">
+                                    ✕ Dismiss
+                                </button>
+                            </div>
+                            <div id="learned-solution-warning-text" style="color: rgba(255, 255, 255, 0.8); margin-bottom: 6px; font-size: 10px;"></div>
+                            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                <button id="disable-learned-btn" class="btn" style="font-size: 10px; padding: 4px 10px; background: rgba(255, 152, 0, 0.2); border: 1px solid #ff9800; cursor: pointer;">
+                                    ⚙️ Disable & Re-learn
+                                </button>
+                                <button id="show-diff-btn" class="btn" style="font-size: 10px; padding: 4px 10px; background: rgba(255, 100, 100, 0.2); border: 1px solid #ff6666; cursor: pointer;">
+                                    📊 Show Exact Diff
+                                </button>
+                                <button id="check-console-btn" class="btn" style="font-size: 10px; padding: 4px 10px; background: rgba(100, 100, 255, 0.2); border: 1px solid #6666ff; cursor: pointer;">
+                                    🔍 Check Console (F12)
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -901,6 +924,7 @@
                     <p class="about-subtitle">Android Automotive UI Testing Platform</p>
                     <span class="about-version">v2.0.0</span>
                     <p class="about-creator">Created by <strong>VEERA SARAVANAN</strong></p>
+                    <p class="about-creator">Manager <strong>Asangi, Sachin</strong></p>
                 </div>
 
                 <!-- Feature Sections -->

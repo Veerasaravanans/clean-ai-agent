@@ -53,22 +53,46 @@ class AgentToolkit:
     def tap(self, x: int, y: int):
         """Execute tap action."""
         return self.adb.tap(x, y)
-    
+
+    def double_tap(self, x: int, y: int, delay_ms: int = 50):
+        """Execute double tap action."""
+        return self.adb.double_tap(x, y, delay_ms)
+
+    def long_press(self, x: int, y: int, duration_ms: int = 1000):
+        """Execute long press action."""
+        return self.adb.long_press(x, y, duration_ms)
+
     def swipe(self, x1: int, y1: int, x2: int, y2: int, duration_ms: int = 300):
         """Execute swipe action."""
         return self.adb.swipe(x1, y1, x2, y2, duration_ms)
-    
+
+    def drag_and_drop(self, x1: int, y1: int, x2: int, y2: int, hold_duration_ms: int = 2500):
+        """Execute drag-and-drop gesture for Android AAOS launcher icons using low-level touch events."""
+        return self.adb.drag_and_drop(x1, y1, x2, y2, hold_duration_ms)
+
+    def swipe_up(self, distance: int = 500):
+        """Swipe up."""
+        return self.adb.swipe_up(distance)
+
+    def swipe_down(self, distance: int = 500):
+        """Swipe down."""
+        return self.adb.swipe_down(distance)
+
     def input_text(self, text: str):
         """Input text."""
         return self.adb.input_text(text)
-    
+
     def press_back(self):
         """Press back button."""
         return self.adb.press_back()
-    
+
     def press_home(self):
         """Press home button."""
         return self.adb.press_home()
+
+    def press_enter(self):
+        """Press enter button."""
+        return self.adb.press_enter()
     
     # ═══════════════════════════════════════════════════════════
     # Screenshot Actions
@@ -122,9 +146,9 @@ class AgentToolkit:
         """Check for learned solution."""
         return self.rag.get_learned_solution(test_id)
     
-    def save_learned_solution(self, test_id: str, title: str, component: str, steps: list):
+    def save_learned_solution(self, test_id: str, title: str, component: str, steps: list, cleanup_results: list = None):
         """Save successful execution as learned solution."""
-        return self.rag.save_learned_solution(test_id, title, component, steps)
+        return self.rag.save_learned_solution(test_id, title, component, steps, cleanup_results=cleanup_results)
     
     # ═══════════════════════════════════════════════════════════
     # Device Info

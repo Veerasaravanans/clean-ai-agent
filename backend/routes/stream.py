@@ -45,6 +45,7 @@ class WebSocketLogHandler(logging.Handler):
     # Track recent messages to deduplicate
     _recent_messages = {}
     _dedup_window_seconds = 5  # Don't repeat same message within 5 seconds
+    _dedup_window_short = 1  # Shorter window for step-specific messages (1 second)
 
     def emit(self, record):
         try:
@@ -55,12 +56,42 @@ class WebSocketLogHandler(logging.Handler):
                 if pattern in message:
                     return  # Skip this message
 
-            # Deduplicate repeated messages
-            msg_key = f"{record.name}:{message}"
+            # CRITICAL FIX: Extract step context for step-specific messages
+            # This prevents deduplication from blocking same messages from different steps
+            step_context = None
+            step_indicators = [
+                "Direct execute step",
+                "⚡ Direct execute step",
+                "Moving to next step:",
+                "➡️ Moving to next step:",
+                "Next step:",
+                "📝 Next step:",
+                "Step",  # General step references
+            ]
+
+            for indicator in step_indicators:
+                if indicator in message:
+                    # Try to extract step number from message
+                    import re
+                    # Patterns: "step 0", "step: 1/3", "step 2:", etc.
+                    match = re.search(r'[Ss]tep[\s:]+(\d+)', message)
+                    if match:
+                        step_context = match.group(1)
+                        break
+
+            # Deduplicate repeated messages with step-aware key
+            # Include step context in key to allow same message for different steps
+            if step_context:
+                msg_key = f"{record.name}:{step_context}:{message}"
+                dedup_window = self._dedup_window_short  # Use shorter window (1s) for step messages
+            else:
+                msg_key = f"{record.name}:{message}"
+                dedup_window = self._dedup_window_seconds  # Use normal window (5s)
+
             current_time = datetime.now().timestamp()
             if msg_key in self._recent_messages:
                 last_time = self._recent_messages[msg_key]
-                if current_time - last_time < self._dedup_window_seconds:
+                if current_time - last_time < dedup_window:
                     return  # Skip duplicate within time window
             self._recent_messages[msg_key] = current_time
 

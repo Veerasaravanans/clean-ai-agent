@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Agent Workflow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            background: #1a1a2e;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 60px;
+            font-weight: 500;
+        }
+
+        .workflow-container {
+            position: relative;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        /* Main flow line */
+        .main-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        /* Node styles */
+        .node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .node:hover {
+            transform: translateY(-5px);
+        }
+
+        .node-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 10px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .node-icon.blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .node-icon.purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .node-icon.green { background: linear-gradient(135deg, #22c55e, #16a34a); }
+        .node-icon.orange { background: linear-gradient(135deg, #f97316, #ea580c); }
+        .node-icon.pink { background: linear-gradient(135deg, #ec4899, #db2777); }
+        .node-icon.teal { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+        .node-icon.yellow { background: linear-gradient(135deg, #eab308, #ca8a04); }
+
+        .node-label {
+            color: #e2e8f0;
+            font-size: 13px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .node-sublabel {
+            color: #64748b;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        /* Connector line */
+        .connector {
+            width: 80px;
+            height: 2px;
+            background: #374151;
+            position: relative;
+        }
+
+        .connector::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -4px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid #374151;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+
+        /* Central agent box */
+        .agent-box {
+            background: #1e293b;
+            border: 2px solid #3b82f6;
+            border-radius: 16px;
+            padding: 20px 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .agent-box .node-icon {
+            width: 56px;
+            height: 56px;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .agent-box .agent-title {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .agent-box .agent-subtitle {
+            color: #64748b;
+            font-size: 11px;
+        }
+
+        /* Plus button */
+        .add-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 2px dashed #4b5563;
+            background: transparent;
+            color: #4b5563;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 10px;
+        }
+
+        .add-btn:hover {
+            border-color: #3b82f6;
+            color: #3b82f6;
+        }
+
+        /* SVG connections layer */
+        .connections-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Tool nodes section */
+        .tools-section {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 120px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .tool-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .tool-node:hover {
+            transform: translateY(-5px);
+        }
+
+        .tool-node .node-icon {
+            width: 56px;
+            height: 56px;
+            font-size: 22px;
+        }
+
+        .tool-node .node-label {
+            font-size: 12px;
+        }
+
+        .tool-node .node-sublabel {
+            font-size: 10px;
+        }
+
+        /* Connection labels */
+        .conn-label {
+            position: absolute;
+            color: #64748b;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: #1a1a2e;
+            padding: 2px 6px;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: #1e293b;
+            border: 1px solid #374151;
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: #fff;
+            font-size: 12px;
+            max-width: 220px;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .tooltip-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .tooltip-desc {
+            color: #94a3b8;
+            font-size: 11px;
+        }
+
+        .flow-section {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Agent Testing Workflow</h1>
+
+    <div class="workflow-container">
+        <div class="flow-section">
+            <!-- SVG for connections -->
+            <svg class="connections-svg" id="connectionsSvg"></svg>
+
+            <!-- Main Flow -->
+            <div class="main-flow">
+                <!-- Excel Input -->
+                <div class="node" id="node-excel" data-tooltip="Excel Test Cases|Load test steps from Excel files">
+                    <div class="node-icon blue">📊</div>
+                    <div class="node-label">Excel Test Cases</div>
+                    <div class="node-sublabel">upload</div>
+                </div>
+
+                <div class="connector"></div>
+
+                <!-- API Routes -->
+                <div class="node" id="node-api" data-tooltip="API Router|Routes requests to agent">
+                    <div class="node-icon purple">🔀</div>
+                    <div class="node-label">API Router</div>
+                    <div class="node-sublabel">FastAPI</div>
+                </div>
+
+                <div class="connector"></div>
+
+                <!-- Central AI Agent -->
+                <div class="agent-box" id="node-agent" data-tooltip="AI Agent|LangGraph state machine with 16+ nodes">
+                    <div class="node-icon green">🤖</div>
+                    <div class="agent-title">AI Agent</div>
+                    <div class="agent-subtitle">LangGraph Engine</div>
+                </div>
+
+                <div class="connector"></div>
+
+                <!-- Device -->
+                <div class="node" id="node-device" data-tooltip="Android Device|Execute actions via ADB">
+                    <div class="node-icon orange">📱</div>
+                    <div class="node-label">Android Device</div>
+                    <div class="node-sublabel">ADB</div>
+                </div>
+
+                <div class="connector"></div>
+
+                <!-- Results -->
+                <div class="node" id="node-results" data-tooltip="Test Results|Store execution results">
+                    <div class="node-icon yellow">📋</div>
+                    <div class="node-label">Test Results</div>
+                    <div class="node-sublabel">JSON Storage</div>
+                </div>
+
+                <button class="add-btn">+</button>
+            </div>
+
+            <!-- Tools Section - connected to AI Agent -->
+            <div class="tools-section">
+                <!-- VIO Cloud -->
+                <div class="tool-node" id="node-vio" data-tooltip="VIO Cloud|Claude 4.5 Sonnet LLM via AWS Bedrock">
+                    <div class="node-icon pink">☁️</div>
+                    <div class="node-label">VIO Cloud</div>
+                    <div class="node-sublabel">Chat Model</div>
+                </div>
+
+                <!-- ChromaDB -->
+                <div class="tool-node" id="node-chroma" data-tooltip="ChromaDB|Vector database for RAG learned solutions">
+                    <div class="node-icon teal">🗄️</div>
+                    <div class="node-label">ChromaDB</div>
+                    <div class="node-sublabel">Memory</div>
+                </div>
+
+                <!-- Vision Tool -->
+                <div class="tool-node" id="node-vision" data-tooltip="Vision Tool|OCR + AI element detection">
+                    <div class="node-icon purple">👁️</div>
+                    <div class="node-label">Vision</div>
+                    <div class="node-sublabel">Tool</div>
+                </div>
+
+                <!-- Screenshot -->
+                <div class="tool-node" id="node-screenshot" data-tooltip="Screenshot Tool|Capture device screen via ADB">
+                    <div class="node-icon purple">📷</div>
+                    <div class="node-label">Screenshot</div>
+                    <div class="node-sublabel">Tool</div>
+                </div>
+
+                <!-- Verification -->
+                <div class="tool-node" id="node-verify" data-tooltip="Verification|SSIM + OCR image comparison">
+                    <div class="node-icon purple">✅</div>
+                    <div class="node-label">Verify</div>
+                    <div class="node-sublabel">Tool</div>
+                </div>
+
+                <!-- RAG Tool -->
+                <div class="tool-node" id="node-rag" data-tooltip="RAG Tool|Learned solutions lookup & storage">
+                    <div class="node-icon purple">🧠</div>
+                    <div class="node-label">RAG</div>
+                    <div class="node-sublabel">Tool</div>
+                </div>
+
+                <!-- Embeddings -->
+                <div class="tool-node" id="node-embed" data-tooltip="Embeddings|Sentence transformer for vector search">
+                    <div class="node-icon pink">🔢</div>
+                    <div class="node-label">Embeddings</div>
+                    <div class="node-sublabel">OpenAI</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-title" id="tooltipTitle"></div>
+        <div class="tooltip-desc" id="tooltipDesc"></div>
+    </div>
+
+    <script>
+        // Draw connections from AI Agent to tools
+        function drawConnections() {
+            const svg = document.getElementById('connectionsSvg');
+            const agent = document.getElementById('node-agent');
+            const tools = ['node-vio', 'node-chroma', 'node-vision', 'node-screenshot', 'node-verify', 'node-rag', 'node-embed'];
+
+            // Get agent position
+            const agentRect = agent.getBoundingClientRect();
+            const containerRect = document.querySelector('.flow-section').getBoundingClientRect();
+
+            const agentCenterX = agentRect.left + agentRect.width / 2 - containerRect.left;
+            const agentBottom = agentRect.bottom - containerRect.top;
+
+            let pathsHTML = '';
+
+            tools.forEach((toolId, index) => {
+                const tool = document.getElementById(toolId);
+                const toolRect = tool.getBoundingClientRect();
+                const toolCenterX = toolRect.left + toolRect.width / 2 - containerRect.left;
+                const toolTop = toolRect.top - containerRect.top;
+
+                // Create curved path from agent to tool
+                const startX = agentCenterX;
+                const startY = agentBottom;
+                const endX = toolCenterX;
+                const endY = toolTop;
+
+                // Control points for smooth curve
+                const midY = startY + (endY - startY) * 0.5;
+
+                const path = `M ${startX} ${startY} C ${startX} ${midY}, ${endX} ${midY}, ${endX} ${endY}`;
+
+                // Determine color based on tool type
+                let strokeColor = '#8b5cf6'; // purple for tools
+                if (toolId === 'node-vio' || toolId === 'node-embed') {
+                    strokeColor = '#ec4899'; // pink for AI services
+                } else if (toolId === 'node-chroma') {
+                    strokeColor = '#14b8a6'; // teal for database
+                }
+
+                pathsHTML += `<path d="${path}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>`;
+            });
+
+            svg.innerHTML = pathsHTML;
+        }
+
+        // Run on load and resize
+        window.addEventListener('load', () => {
+            setTimeout(drawConnections, 100);
+        });
+        window.addEventListener('resize', drawConnections);
+
+        // Tooltip handling
+        const tooltip = document.getElementById('tooltip');
+        const tooltipTitle = document.getElementById('tooltipTitle');
+        const tooltipDesc = document.getElementById('tooltipDesc');
+
+        document.querySelectorAll('[data-tooltip]').forEach(el => {
+            el.addEventListener('mouseenter', (e) => {
+                const [title, desc] = el.dataset.tooltip.split('|');
+                tooltipTitle.textContent = title;
+                tooltipDesc.textContent = desc || '';
+                tooltip.classList.add('show');
+            });
+
+            el.addEventListener('mouseleave', () => {
+                tooltip.classList.remove('show');
+            });
+
+            el.addEventListener('mousemove', (e) => {
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY + 15) + 'px';
+            });
+        });
+    </script>
+</body>
+</html>

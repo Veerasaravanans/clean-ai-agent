@@ -102,6 +102,28 @@ async def refresh_index():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/api/rag/force-reindex")
+async def force_reindex():
+    """
+    Force re-index ALL Excel files (clears indexed files tracking).
+    Use after schema changes (e.g., adding cleanup configs).
+    """
+    try:
+        rag = get_rag_tool()
+        rag.force_reindex_all()
+        stats = rag.get_stats()
+
+        return {
+            "success": True,
+            "data": stats,
+            "message": "Force re-index completed successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"Force re-index error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/api/rag/search")
 async def search_test_cases(
     query: str = Query(..., description="Search query"),
@@ -289,4 +311,102 @@ async def delete_learned_solution(test_id: str):
         raise
     except Exception as e:
         logger.error(f"Delete learned solution error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/rag/compare/{test_id}")
+async def compare_learned_with_current(test_id: str):
+    """
+    Compare learned solution with current test case and return detailed differences.
+
+    Args:
+        test_id: Test case ID
+
+    Returns:
+        Detailed comparison showing exact differences
+    """
+    try:
+        rag = get_rag_tool()
+
+        # Get learned solution
+        learned = rag.get_learned_solution(test_id)
+        if not learned:
+            return {
+                "success": True,
+                "has_learned": False,
+                "message": "No learned solution exists"
+            }
+
+        # Get current test case
+        current = rag.get_test_description(test_id)
+        if not current:
+            return {
+                "success": True,
+                "has_learned": True,
+                "has_current": False,
+                "message": "Test case not found in RAG database"
+            }
+
+        learned_steps = learned.get("steps", [])
+        current_steps = current.get("steps", [])
+
+        # Helper to normalize
+        def normalize(text):
+            import re
+            text = str(text).strip().lower()
+
+            # CRITICAL FIX: Remove "Step X:" prefix before comparing
+            # Excel parser adds "Step 1:", "Step 2:", etc.
+            text = re.sub(r'^step\s+\d+:\s*', '', text, flags=re.IGNORECASE)
+
+            # Remove "Expected:" suffix before comparing
+            if 'expected:' in text:
+                text = text.split('expected:')[0].strip()
+
+            text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+            text = re.sub(r'\s+', ' ', text)      # Collapse spaces
+            return text.strip()
+
+        # Compare
+        differences = []
+        match = True
+
+        if len(learned_steps) != len(current_steps):
+            match = False
+            differences.append({
+                "type": "count_mismatch",
+                "learned_count": len(learned_steps),
+                "current_count": len(current_steps)
+            })
+
+        for i in range(min(len(learned_steps), len(current_steps))):
+            learned_desc = learned_steps[i].get("description", "")
+            current_desc = current_steps[i] if isinstance(current_steps[i], str) else ""
+
+            learned_norm = normalize(learned_desc)
+            current_norm = normalize(current_desc)
+
+            if learned_norm != current_norm:
+                match = False
+                differences.append({
+                    "type": "description_mismatch",
+                    "step": i + 1,
+                    "learned_raw": learned_desc,
+                    "current_raw": current_desc,
+                    "learned_normalized": learned_norm,
+                    "current_normalized": current_norm
+                })
+
+        return {
+            "success": True,
+            "has_learned": True,
+            "has_current": True,
+            "match": match,
+            "differences": differences,
+            "learned_step_count": len(learned_steps),
+            "current_step_count": len(current_steps)
+        }
+
+    except Exception as e:
+        logger.error(f"Compare error: {e}")
         raise HTTPException(status_code=500, detail=str(e))

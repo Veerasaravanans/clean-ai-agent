@@ -148,6 +148,35 @@ class AgentOrchestrator:
             )
 
             self.current_state = result_state
+
+            # ═══════════════════════════════════════════════════════════
+            # POST CONDITION SAFETY NET: Execute raw ADB intents if the
+            # graph didn't reach cleanup (e.g., HITL timeout, error, stop)
+            # ═══════════════════════════════════════════════════════════
+            post_condition_intents = result_state.get("post_condition_intents")
+            cleanup_already_ran = result_state.get("end_of_test_cleanup_executed", False)
+
+            if post_condition_intents and not cleanup_already_ran:
+                logger.info(f"🧹 POST CONDITION SAFETY NET: Graph ended without cleanup, executing {len(post_condition_intents)} intents")
+                try:
+                    from backend.tools.toolkit import toolkit
+                    import time
+
+                    for i, intent_cmd in enumerate(post_condition_intents):
+                        logger.info(f"   [{i+1}/{len(post_condition_intents)}] Executing: {intent_cmd}")
+                        cmd_result = toolkit.adb.execute_raw_command(intent_cmd)
+                        success_flag = cmd_result.get("success", False)
+                        if success_flag:
+                            logger.info(f"   ✅ Intent {i+1} executed successfully")
+                        else:
+                            logger.warning(f"   ⚠️ Intent {i+1} failed: {cmd_result.get('error', 'unknown')}")
+                        if i < len(post_condition_intents) - 1:
+                            time.sleep(1)
+
+                    logger.info("✅ Post condition safety net complete")
+                except Exception as e:
+                    logger.error(f"❌ Post condition safety net error: {e}")
+
             self.execution_active = False
             self.execution_control.end_execution()
 
@@ -200,6 +229,25 @@ class AgentOrchestrator:
             logger.error(f"❌ Test execution error: {e}")
             import traceback
             traceback.print_exc()
+
+            # POST CONDITION SAFETY NET: Also run on exceptions
+            if self.current_state:
+                pc_intents = self.current_state.get("post_condition_intents")
+                pc_ran = self.current_state.get("end_of_test_cleanup_executed", False)
+                if pc_intents and not pc_ran:
+                    logger.info(f"🧹 POST CONDITION SAFETY NET (exception): Executing {len(pc_intents)} intents")
+                    try:
+                        from backend.tools.toolkit import toolkit
+                        import time
+                        for i, intent_cmd in enumerate(pc_intents):
+                            logger.info(f"   [{i+1}/{len(pc_intents)}] Executing: {intent_cmd}")
+                            toolkit.adb.execute_raw_command(intent_cmd)
+                            if i < len(pc_intents) - 1:
+                                time.sleep(1)
+                        logger.info("✅ Post condition safety net complete (exception path)")
+                    except Exception as pc_err:
+                        logger.error(f"❌ Post condition safety net error: {pc_err}")
+
             self.execution_active = False
             self.execution_control.end_execution()
 

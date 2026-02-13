@@ -99,3 +99,6 @@ tmp/
 *.bak
 .claude/
 CLAUDE.md
+tests/
+nul
+docs/

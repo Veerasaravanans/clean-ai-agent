@@ -16,8 +16,8 @@ from typing import List, Dict, Optional, Any
 from pathlib import Path
 import openpyxl
 
-from backend.models.enums import VerificationType
-from backend.models.results import CropRegion, StepVerificationConfig
+from backend.models.enums import VerificationType, CleanupType, CleanupTrigger
+from backend.models.results import CropRegion, StepVerificationConfig, StepCleanupConfig
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +119,44 @@ class ExcelParser:
             'verification details', 'verify details', 'what_to_verify'
         ])
 
+        # NEW: Cleanup columns
+        cleanup_type_col = self._find_column(headers, [
+            'cleanup type', 'cleanup_type', 'cleanup', 'post-processing'
+        ])
+        cleanup_trigger_col = self._find_column(headers, [
+            'cleanup trigger', 'cleanup_trigger', 'when to cleanup', 'cleanup_when'
+        ])
+        reverse_steps_col = self._find_column(headers, [
+            'reverse steps', 'reverse_steps', 'reverse', 'undo steps'
+        ])
+        reverse_count_col = self._find_column(headers, [
+            'reverse count', 'reverse_count', 'steps to reverse', 'undo count'
+        ])
+        ai_driven_cleanup_col = self._find_column(headers, [
+            'ai driven cleanup', 'ai_driven_cleanup', 'ai cleanup', 'ai_cleanup'
+        ])
+        ai_context_col = self._find_column(headers, [
+            'ai context', 'ai_context', 'cleanup context', 'ai cleanup context'
+        ])
+        close_dialog_col = self._find_column(headers, [
+            'close dialog first', 'close_dialog_first', 'close dialog', 'dialog_close'
+        ])
+        dialog_button_col = self._find_column(headers, [
+            'dialog close button', 'dialog_close_button', 'close button', 'dialog button'
+        ])
+        restore_components_col = self._find_column(headers, [
+            'restore components', 'restore_components', 'components', 'restore_what'
+        ])
+        fallback_cleanup_col = self._find_column(headers, [
+            'fallback cleanup', 'fallback_cleanup', 'backup cleanup', 'fallback'
+        ])
+
+        # NEW: Post Condition column (raw ADB intent commands for end-of-test cleanup)
+        post_condition_col = self._find_column(headers, [
+            'post condition', 'post_condition', 'postcondition', 'post-condition',
+            'post conditions', 'post_conditions', 'cleanup intent', 'cleanup_intent'
+        ])
+
         for row_idx in range(2, sheet.max_row + 1):
             row = sheet[row_idx]
 
@@ -137,6 +175,10 @@ class ExcelParser:
                     if title and ":" in title:
                         component = title.split(":")[0].strip()
 
+                    # NEW: Parse post condition (raw ADB intents, semicolon-separated)
+                    post_condition_str = self._get_cell_value(row, post_condition_col)
+                    post_condition_intents = self._parse_post_condition(post_condition_str)
+
                     test_cases[current_test_id] = {
                         "test_id": current_test_id,
                         "title": title or "",
@@ -144,6 +186,8 @@ class ExcelParser:
                         "type": test_type,
                         "steps": [],
                         "step_verification_configs": [],  # NEW: Per-step verification config
+                        "step_cleanup_configs": [],  # NEW: Per-step cleanup config
+                        "post_condition_intents": post_condition_intents,  # NEW: Raw ADB intents
                         "description": title or ""  # Use title as description
                     }
 
@@ -156,6 +200,18 @@ class ExcelParser:
                 # NEW: Parse verification config for this step
                 verification_type_str = self._get_cell_value(row, verification_type_col)
                 what_to_verify_str = self._get_cell_value(row, what_to_verify_col)
+
+                # NEW: Parse cleanup config for this step
+                cleanup_type_str = self._get_cell_value(row, cleanup_type_col)
+                cleanup_trigger_str = self._get_cell_value(row, cleanup_trigger_col)
+                reverse_steps_str = self._get_cell_value(row, reverse_steps_col)
+                reverse_count_str = self._get_cell_value(row, reverse_count_col)
+                ai_driven_cleanup_str = self._get_cell_value(row, ai_driven_cleanup_col)
+                ai_context_str = self._get_cell_value(row, ai_context_col)
+                close_dialog_str = self._get_cell_value(row, close_dialog_col)
+                dialog_button_str = self._get_cell_value(row, dialog_button_col)
+                restore_components_str = self._get_cell_value(row, restore_components_col)
+                fallback_cleanup_str = self._get_cell_value(row, fallback_cleanup_col)
 
                 if step_num and step_desc:
                     step_text = f"Step {step_num}: {step_desc}"
@@ -171,6 +227,23 @@ class ExcelParser:
                     )
                     test_cases[current_test_id]["step_verification_configs"].append(
                         verification_config.to_dict()
+                    )
+
+                    # Parse and add cleanup config for this step
+                    cleanup_config = self._parse_cleanup_config(
+                        cleanup_type_str,
+                        cleanup_trigger_str,
+                        reverse_steps_str,
+                        reverse_count_str,
+                        ai_driven_cleanup_str,
+                        ai_context_str,
+                        close_dialog_str,
+                        dialog_button_str,
+                        restore_components_str,
+                        fallback_cleanup_str
+                    )
+                    test_cases[current_test_id]["step_cleanup_configs"].append(
+                        cleanup_config.to_dict()
                     )
 
         # Convert to list and add expected field
@@ -232,6 +305,207 @@ class ExcelParser:
         # No verification = no additional parsing needed
 
         return config
+
+    def _parse_cleanup_config(
+        self,
+        cleanup_type_str: Optional[str],
+        cleanup_trigger_str: Optional[str],
+        reverse_steps_str: Optional[str],
+        reverse_count_str: Optional[str],
+        ai_driven_cleanup_str: Optional[str],
+        ai_context_str: Optional[str],
+        close_dialog_str: Optional[str],
+        dialog_button_str: Optional[str],
+        restore_components_str: Optional[str],
+        fallback_cleanup_str: Optional[str]
+    ) -> StepCleanupConfig:
+        """
+        Parse cleanup configuration from Excel columns.
+
+        Args:
+            cleanup_type_str: Value from "Cleanup Type" column
+            cleanup_trigger_str: Value from "Cleanup Trigger" column
+            reverse_steps_str: Value from "Reverse Steps" column
+            reverse_count_str: Value from "Reverse Count" column
+            ai_driven_cleanup_str: Value from "AI Driven Cleanup" column
+            ai_context_str: Value from "AI Context" column
+            close_dialog_str: Value from "Close Dialog First" column
+            dialog_button_str: Value from "Dialog Close Button" column
+            restore_components_str: Value from "Restore Components" column
+            fallback_cleanup_str: Value from "Fallback Cleanup" column
+
+        Returns:
+            StepCleanupConfig instance
+        """
+        # Parse cleanup type
+        cleanup_type = self._parse_cleanup_type(cleanup_type_str)
+
+        # Parse cleanup trigger
+        cleanup_trigger = self._parse_cleanup_trigger(cleanup_trigger_str)
+
+        # Parse boolean fields
+        reverse_steps = self._parse_boolean(reverse_steps_str, default=False)
+        ai_driven = self._parse_boolean(ai_driven_cleanup_str, default=False)
+        close_dialog_first = self._parse_boolean(close_dialog_str, default=False)
+
+        # Parse reverse count
+        reverse_count = None
+        if reverse_count_str:
+            try:
+                reverse_count = int(reverse_count_str)
+            except ValueError:
+                logger.warning(f"Invalid reverse_count value: {reverse_count_str}")
+
+        # Parse restore components (comma-separated)
+        restore_components = None
+        if restore_components_str:
+            restore_components = [c.strip() for c in restore_components_str.split(",") if c.strip()]
+
+        # Parse fallback cleanup type
+        fallback_cleanup_type = self._parse_cleanup_type(fallback_cleanup_str)
+        if fallback_cleanup_type == CleanupType.NONE:
+            fallback_cleanup_type = CleanupType.RETURN_HOME  # Default fallback
+
+        return StepCleanupConfig(
+            cleanup_type=cleanup_type,
+            cleanup_trigger=cleanup_trigger,
+            reverse_steps=reverse_steps,
+            reverse_count=reverse_count,
+            ai_driven=ai_driven,
+            ai_context=ai_context_str,
+            fallback_cleanup_type=fallback_cleanup_type,
+            close_dialog_first=close_dialog_first,
+            dialog_close_button_text=dialog_button_str,
+            restore_specific_components=restore_components
+        )
+
+    def _parse_cleanup_type(self, value: Optional[str]) -> CleanupType:
+        """
+        Parse CleanupType from Excel value.
+
+        Args:
+            value: Raw Excel cell value
+
+        Returns:
+            CleanupType enum
+        """
+        if not value:
+            return CleanupType.NONE
+
+        value_lower = value.lower().strip()
+
+        if not value_lower or "none" in value_lower or "skip" in value_lower:
+            return CleanupType.NONE
+
+        # CRITICAL: Check compound types FIRST (before simple types)
+        # "reverse and home" contains both "reverse" and "home" — must match before either
+        if "reverse and home" in value_lower or "reverse + home" in value_lower or "reverse_and_home" in value_lower:
+            return CleanupType.REVERSE_AND_HOME
+        elif "close and reboot" in value_lower or "close + reboot" in value_lower or "close_and_reboot" in value_lower:
+            return CleanupType.CLOSE_AND_REBOOT
+        elif "factory reset" in value_lower or "factory" in value_lower or "wipe" in value_lower:
+            return CleanupType.FACTORY_RESET
+        elif "ai driven" in value_lower or "ai_driven" in value_lower or "auto" in value_lower:
+            return CleanupType.AI_DRIVEN
+        # Simple types (checked AFTER compound types)
+        elif "return home" in value_lower or "return_home" in value_lower or "home" in value_lower or "press home" in value_lower:
+            return CleanupType.RETURN_HOME
+        elif "reverse action" in value_lower or "reverse_action" in value_lower or "reverse" in value_lower or "undo" in value_lower:
+            return CleanupType.REVERSE_ACTION
+        elif "restore state" in value_lower or "restore_state" in value_lower or "restore" in value_lower:
+            return CleanupType.RESTORE_STATE
+        elif "close dialog" in value_lower or "close_dialog" in value_lower or "close" in value_lower or "dismiss" in value_lower:
+            return CleanupType.CLOSE_DIALOG
+        elif "reboot" in value_lower or "restart" in value_lower:
+            return CleanupType.REBOOT
+        else:
+            logger.warning(f"Unknown cleanup type: {value}, defaulting to NONE")
+            return CleanupType.NONE
+
+    def _parse_cleanup_trigger(self, value: Optional[str]) -> CleanupTrigger:
+        """
+        Parse CleanupTrigger from Excel value.
+
+        Args:
+            value: Raw Excel cell value
+
+        Returns:
+            CleanupTrigger enum
+        """
+        if not value:
+            return CleanupTrigger.END_OF_TEST  # Default
+
+        value_lower = value.lower().strip()
+
+        # Map common variations to enum values
+        if "after step" in value_lower or "after each step" in value_lower or "per step" in value_lower:
+            return CleanupTrigger.AFTER_STEP
+        elif "end of test" in value_lower or "end" in value_lower or "final" in value_lower:
+            return CleanupTrigger.END_OF_TEST
+        elif "both" in value_lower or "always both" in value_lower or "step and test" in value_lower:
+            return CleanupTrigger.BOTH
+        elif "on failure" in value_lower or "if fail" in value_lower or "failure only" in value_lower:
+            return CleanupTrigger.ON_FAILURE
+        elif "always" in value_lower or "unconditional" in value_lower:
+            return CleanupTrigger.ALWAYS
+        else:
+            logger.warning(f"Unknown cleanup trigger: {value}, defaulting to END_OF_TEST")
+            return CleanupTrigger.END_OF_TEST
+
+    def _parse_boolean(self, value: Optional[str], default: bool = False) -> bool:
+        """
+        Parse boolean from Excel value.
+
+        Args:
+            value: Raw Excel cell value
+            default: Default value if parsing fails
+
+        Returns:
+            Boolean value
+        """
+        if not value:
+            return default
+
+        value_lower = value.lower().strip()
+
+        # True values
+        if value_lower in ["true", "yes", "y", "1", "on", "enabled", "enable"]:
+            return True
+        # False values
+        elif value_lower in ["false", "no", "n", "0", "off", "disabled", "disable"]:
+            return False
+        else:
+            logger.warning(f"Cannot parse boolean from: {value}, using default: {default}")
+            return default
+
+    def _parse_post_condition(self, value: Optional[str]) -> List[str]:
+        """
+        Parse post condition ADB intent commands from Excel value.
+
+        Format: "intent1;intent2;intent3" (semicolon-separated)
+        Each intent is a raw ADB command (e.g., "am start -a android.intent.action.MAIN")
+
+        Args:
+            value: Raw Excel cell value (semicolon-separated ADB commands)
+
+        Returns:
+            List of ADB intent command strings (empty list if none)
+        """
+        if not value:
+            return []
+
+        intents = []
+        for part in value.split(";"):
+            intent = part.strip()
+            if intent:
+                intents.append(intent)
+
+        if intents:
+            logger.info(f"   Post condition intents: {len(intents)} commands parsed")
+            for i, intent in enumerate(intents):
+                logger.info(f"     Intent {i+1}: {intent}")
+
+        return intents
 
     def _parse_ocr_texts(self, text_str: str) -> List[str]:
         """

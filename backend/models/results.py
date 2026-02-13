@@ -411,3 +411,109 @@ class DynamicVerificationResult:
             result["partial_result"] = self.partial_result.to_dict()
 
         return result
+
+
+# ═══════════════════════════════════════════════════════════
+# Cleanup System Data Classes
+# ═══════════════════════════════════════════════════════════
+
+from backend.models.enums import CleanupType, CleanupTrigger
+
+
+@dataclass
+class StepCleanupConfig:
+    """
+    Cleanup configuration for a single test step.
+    Parsed from Excel cleanup columns and determines how device state should be restored.
+    """
+    cleanup_type: CleanupType = CleanupType.NONE
+    cleanup_trigger: CleanupTrigger = CleanupTrigger.END_OF_TEST
+
+    # Reversal configuration
+    reverse_steps: bool = False  # Whether to reverse actions
+    reverse_count: Optional[int] = None  # Number of steps to reverse (None = all)
+
+    # AI-driven cleanup
+    ai_driven: bool = False  # Let AI decide cleanup strategy
+    ai_context: Optional[str] = None  # Additional context for AI decision
+
+    # Fallback and retry
+    fallback_cleanup_type: CleanupType = CleanupType.RETURN_HOME
+    max_retries: int = 3
+
+    # Dialog handling
+    close_dialog_first: bool = False  # Close dialog before cleanup
+    dialog_close_button_text: Optional[str] = None  # Text on close button
+
+    # Selective restoration
+    restore_specific_components: Optional[List[str]] = None  # Only restore specific components
+
+    def to_dict(self) -> dict:
+        return {
+            "cleanup_type": self.cleanup_type.value,
+            "cleanup_trigger": self.cleanup_trigger.value,
+            "reverse_steps": self.reverse_steps,
+            "reverse_count": self.reverse_count,
+            "ai_driven": self.ai_driven,
+            "ai_context": self.ai_context,
+            "fallback_cleanup_type": self.fallback_cleanup_type.value,
+            "max_retries": self.max_retries,
+            "close_dialog_first": self.close_dialog_first,
+            "dialog_close_button_text": self.dialog_close_button_text,
+            "restore_specific_components": self.restore_specific_components
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "StepCleanupConfig":
+        return cls(
+            cleanup_type=CleanupType(data.get("cleanup_type", "none")),
+            cleanup_trigger=CleanupTrigger(data.get("cleanup_trigger", "end_of_test")),
+            reverse_steps=data.get("reverse_steps", False),
+            reverse_count=data.get("reverse_count"),
+            ai_driven=data.get("ai_driven", False),
+            ai_context=data.get("ai_context"),
+            fallback_cleanup_type=CleanupType(data.get("fallback_cleanup_type", "return_home")),
+            max_retries=data.get("max_retries", 3),
+            close_dialog_first=data.get("close_dialog_first", False),
+            dialog_close_button_text=data.get("dialog_close_button_text"),
+            restore_specific_components=data.get("restore_specific_components")
+        )
+
+    @classmethod
+    def default(cls) -> "StepCleanupConfig":
+        """Return default config (no cleanup)."""
+        return cls(cleanup_type=CleanupType.NONE)
+
+
+@dataclass
+class DynamicCleanupResult:
+    """
+    Result from cleanup operation execution.
+    Tracks what cleanup was performed and whether it succeeded.
+    """
+    success: bool
+    cleanup_type_executed: CleanupType
+    cleanup_trigger: CleanupTrigger
+    actions_reversed: List[Dict[str, Any]] = field(default_factory=list)
+    reversal_count: int = 0
+    execution_time_seconds: float = 0.0
+    retry_count: int = 0
+    fallback_used: bool = False
+    ai_decision: Optional[str] = None
+    ai_confidence: Optional[float] = None
+    error_message: Optional[str] = None
+
+    def to_dict(self) -> dict:
+        return {
+            "success": self.success,
+            "cleanup_type_executed": self.cleanup_type_executed.value,
+            "cleanup_trigger": self.cleanup_trigger.value,
+            "actions_reversed": self.actions_reversed,
+            "reversal_count": self.reversal_count,
+            "execution_time_seconds": self.execution_time_seconds,
+            "retry_count": self.retry_count,
+            "fallback_used": self.fallback_used,
+            "ai_decision": self.ai_decision,
+            "ai_confidence": self.ai_confidence,
+            "error_message": self.error_message
+        }

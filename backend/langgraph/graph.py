@@ -55,11 +55,26 @@ def create_agent_graph() -> StateGraph:
     workflow.add_node("wait_human", nodes.wait_human)
     workflow.add_node("apply_guidance", nodes.apply_guidance)  # CRITICAL FIX: Added this node
     workflow.add_node("parse_intent", nodes.parse_intent)
-    
+
+    # Part 4: Error Handling (HITL Architecture Fix)
+    workflow.add_node("handle_technical_error", nodes.handle_technical_error)  # NEW: Handle technical errors
+
+    # Part 5: Cleanup System (Phase 5 Integration)
+    workflow.add_node("cleanup_dispatcher", nodes.cleanup_dispatcher)
+    workflow.add_node("cleanup_home", nodes.cleanup_home)
+    workflow.add_node("cleanup_reverse_action", nodes.cleanup_reverse_action)
+    workflow.add_node("cleanup_ai_driven", nodes.cleanup_ai_driven)
+    workflow.add_node("cleanup_close_dialog", nodes.cleanup_close_dialog)
+    workflow.add_node("cleanup_restore_state", nodes.cleanup_restore_state)
+    workflow.add_node("cleanup_end_of_test", nodes.cleanup_end_of_test)
+    workflow.add_node("cleanup_post_condition", nodes.cleanup_post_condition)  # NEW: Raw ADB intents
+    workflow.add_node("cleanup_reboot", nodes.cleanup_reboot)
+    workflow.add_node("cleanup_factory_reset", nodes.cleanup_factory_reset)
+
     # Helper node for retry increment
     workflow.add_node("increment_retry", edges.increment_retry)
-    
-    logger.info("✅ Added 16 nodes + 1 helper")
+
+    logger.info("✅ Added 27 nodes (including 10 cleanup nodes) + 1 helper")
     
     # ═══════════════════════════════════════════════════════════════
     # Set entry point with HITL resumption check
@@ -161,28 +176,37 @@ def create_agent_graph() -> StateGraph:
         }
     )
     
-    # 10. Verify result → route based on verification (CRITICAL: includes stop → END)
+    # 10. Verify result → check cleanup → route (CLEANUP SYSTEM INTEGRATED)
     workflow.add_conditional_edges(
         "verify_result",
-        edges.route_after_verification,
+        edges.route_after_verification_with_cleanup,
         {
-            "success": "next_step",
+            "cleanup": "cleanup_dispatcher",  # Check cleanup first
+            "next_step": "next_step",  # No cleanup, proceed to next step
             "retry": "increment_retry",
             "end": END  # CRITICAL: Stop condition routes to END
         }
     )
     
-    # 11. Increment retry → should retry or HITL
+    # 11. Increment retry → should retry, test_failed, or end
+    # NOTE: In test_execution mode, HITL is DISABLED
+    # - "retry" → try again (capture_screen)
+    # - "test_failed" → verification/decision failure at max retries → log_results (then cleanup)
+    # - "end" → technical error → handle_technical_error (then cleanup)
+    # - "hitl" → standalone mode only → wait_human
     workflow.add_conditional_edges(
         "increment_retry",
         edges.should_retry,
         {
             "retry": "capture_screen",
-            "hitl": "wait_human"
+            "hitl": "wait_human",  # Only reached in standalone mode
+            "test_failed": "log_results",  # Verification/decision failure → log as FAILED → cleanup
+            "end": "handle_technical_error"  # Technical error only
         }
     )
     
-    # 12. CRITICAL FIX: Wait human → check if guidance received
+    # 12. Wait human → check if guidance received (STANDALONE MODE ONLY)
+    # HITL is only used in standalone/idle mode, NOT in test execution
     # If guidance already in state → apply it
     # Else → END (wait for external HITL via API)
     workflow.add_conditional_edges(
@@ -220,10 +244,116 @@ def create_agent_graph() -> StateGraph:
         }
     )
     
-    # 16. Log results → END
-    workflow.add_edge("log_results", END)
-    
-    logger.info("✅ Added all edges and routing (with proper HITL flow)")
+    # 10b. CLEANUP SYSTEM: Cleanup dispatcher routes to handlers
+    workflow.add_conditional_edges(
+        "cleanup_dispatcher",
+        edges.route_cleanup_type,
+        {
+            "next_step": "next_step",  # No cleanup (cleanup_type=none)
+            "cleanup_home": "cleanup_home",
+            "cleanup_reverse_action": "cleanup_reverse_action",
+            "cleanup_close_dialog": "cleanup_close_dialog",
+            "cleanup_ai_driven": "cleanup_ai_driven",
+            "cleanup_restore_state": "cleanup_restore_state",
+            "cleanup_reboot": "cleanup_reboot",
+            "cleanup_factory_reset": "cleanup_factory_reset"
+        }
+    )
+
+    # 10c. CLEANUP SYSTEM: Cleanup handlers route based on cleanup_phase
+    # If in_step → next_step, if end_of_test → END
+    def route_after_cleanup_handler(state: AgentState) -> str:
+        """Route after cleanup handler based on cleanup_phase."""
+        cleanup_phase = state.get("cleanup_phase", "in_step")
+        if cleanup_phase == "end_of_test":
+            return "end"
+        return "next_step"
+
+    workflow.add_conditional_edges(
+        "cleanup_home",
+        route_after_cleanup_handler,
+        {"next_step": "next_step", "end": END}
+    )
+    workflow.add_conditional_edges(
+        "cleanup_reverse_action",
+        route_after_cleanup_handler,
+        {"next_step": "next_step", "end": END}
+    )
+    workflow.add_conditional_edges(
+        "cleanup_close_dialog",
+        route_after_cleanup_handler,
+        {"next_step": "next_step", "end": END}
+    )
+    workflow.add_conditional_edges(
+        "cleanup_restore_state",
+        route_after_cleanup_handler,
+        {"next_step": "next_step", "end": END}
+    )
+    workflow.add_conditional_edges(
+        "cleanup_reboot",
+        route_after_cleanup_handler,
+        {"next_step": "next_step", "end": END}
+    )
+    workflow.add_conditional_edges(
+        "cleanup_factory_reset",
+        route_after_cleanup_handler,
+        {"next_step": "next_step", "end": END}
+    )
+
+    # 10d. CLEANUP SYSTEM: AI-driven cleanup routes to chosen handler
+    workflow.add_conditional_edges(
+        "cleanup_ai_driven",
+        edges.route_ai_cleanup_decision,
+        {
+            "cleanup_home": "cleanup_home",
+            "cleanup_reverse_action": "cleanup_reverse_action",
+            "cleanup_close_dialog": "cleanup_close_dialog",
+            "cleanup_restore_state": "cleanup_restore_state",
+            "cleanup_reboot": "cleanup_reboot"
+        }
+    )
+
+    # 16. CLEANUP SYSTEM: Log results → check end-of-test cleanup → END
+    workflow.add_conditional_edges(
+        "log_results",
+        edges.should_cleanup_end_of_test,
+        {
+            "cleanup": "cleanup_end_of_test",
+            "end": END
+        }
+    )
+
+    # 16a. CLEANUP SYSTEM: End-of-test cleanup orchestrator routes to handlers
+    workflow.add_conditional_edges(
+        "cleanup_end_of_test",
+        edges.route_end_of_test_cleanup,
+        {
+            "end": END,  # No cleanup
+            "cleanup_post_condition": "cleanup_post_condition",  # Raw ADB intents
+            "cleanup_home": "cleanup_home",
+            "cleanup_reverse_action": "cleanup_reverse_action",
+            "cleanup_close_dialog": "cleanup_close_dialog",
+            "cleanup_restore_state": "cleanup_restore_state",
+            "cleanup_reboot": "cleanup_reboot",
+            "cleanup_factory_reset": "cleanup_factory_reset"
+        }
+    )
+
+    # 16b. Post condition cleanup → END (always terminates after executing intents)
+    workflow.add_edge("cleanup_post_condition", END)
+
+    # Handle technical error → check cleanup before END
+    # CRITICAL: Post condition must execute even on test failure
+    workflow.add_conditional_edges(
+        "handle_technical_error",
+        edges.should_cleanup_end_of_test,
+        {
+            "cleanup": "cleanup_end_of_test",
+            "end": END
+        }
+    )
+
+    logger.info("✅ Added all edges and routing (with HITL flow, cleanup system, and technical error handling)")
     
     # ═══════════════════════════════════════════════════════════════
     # Compile graph WITHOUT interrupts (no checkpointer needed)
