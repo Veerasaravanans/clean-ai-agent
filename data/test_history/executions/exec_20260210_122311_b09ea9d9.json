@@ -1,0 +1,31 @@
+{
+  "execution_id": "exec_20260210_122311_b09ea9d9",
+  "test_id": "NAID-NEW-010",
+  "test_title": null,
+  "status": "failure",
+  "started_at": "2026-02-10T12:23:11.129770",
+  "completed_at": "2026-02-10T12:25:29.809878",
+  "duration_ms": 138680,
+  "total_steps": 0,
+  "completed_steps": 0,
+  "passed_steps": 0,
+  "failed_steps": 0,
+  "steps": [],
+  "ssim_verifications": 0,
+  "ssim_passed": 0,
+  "ssim_failed": 0,
+  "average_ssim": null,
+  "use_learned": false,
+  "max_retries": 3,
+  "device_id": null,
+  "device_model": null,
+  "device_resolution": null,
+  "model_used": null,
+  "errors": [
+    "No coordinates",
+    "No coordinates",
+    "No coordinates for tap"
+  ],
+  "tags": [],
+  "notes": null
+}

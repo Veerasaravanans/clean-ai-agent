@@ -1,0 +1,29 @@
+{
+  "execution_id": "exec_20260206_131600_f9ff5030",
+  "test_id": "NAID-NEW-001",
+  "test_title": null,
+  "status": "failure",
+  "started_at": "2026-02-06T13:16:00.214570",
+  "completed_at": "2026-02-06T13:16:51.714603",
+  "duration_ms": 51500,
+  "total_steps": 0,
+  "completed_steps": 0,
+  "passed_steps": 0,
+  "failed_steps": 0,
+  "steps": [],
+  "ssim_verifications": 0,
+  "ssim_passed": 0,
+  "ssim_failed": 0,
+  "average_ssim": null,
+  "use_learned": false,
+  "max_retries": 1,
+  "device_id": null,
+  "device_model": null,
+  "device_resolution": null,
+  "model_used": null,
+  "errors": [
+    "Could not find Play Store app after 4 attempts"
+  ],
+  "tags": [],
+  "notes": null
+}

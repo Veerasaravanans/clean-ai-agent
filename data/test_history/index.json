@@ -1,6 +1,13 @@
 {
   "executions": [
     {
+      "execution_id": "exec_20260309_131718_d3eab099",
+      "test_id": "NAID-NEW-001",
+      "status": "success",
+      "started_at": "2026-03-09T13:17:18.610313",
+      "completed_at": "2026-03-09T13:17:48.253055"
+    },
+    {
       "execution_id": "exec_20260212_145606_89ba2a7e",
       "test_id": "NAID-NEW-001",
       "status": "failure",
